@@ -1,0 +1,111 @@
+// Mock data for Phase 1 — will be replaced by real API calls in Phase 2
+
+export const mockCustomers = [
+  { id: 1, name: 'Arun Kumar', phone: '9876543210', address: '12, MG Road, Chennai - 600001', gstin: '', created_at: '2026-01-15' },
+  { id: 2, name: 'Priya Sharma', phone: '9876543211', address: '45, Anna Salai, Chennai - 600002', gstin: 'GSTIN12345', created_at: '2026-02-10' },
+  { id: 3, name: 'Rajesh Nair', phone: '9876543212', address: '8, Beach Road, Pondicherry - 605001', gstin: '', created_at: '2026-03-05' },
+  { id: 4, name: 'Lakshmi Devi', phone: '9876543213', address: '22, Gandhi Nagar, Coimbatore - 641001', gstin: '', created_at: '2026-03-20' },
+  { id: 5, name: 'Suresh Babu', phone: '9876543214', address: '5, Rajaji St, Madurai - 625001', gstin: '', created_at: '2026-04-01' },
+  { id: 6, name: 'Meena Krishnan', phone: '9876543215', address: '33, Park View, Trichy - 620001', gstin: 'GSTIN67890', created_at: '2026-04-15' },
+  { id: 7, name: 'Vikram Pandian', phone: '9876543216', address: '7, River Side, Salem - 636001', gstin: '', created_at: '2026-05-01' },
+  { id: 8, name: 'Kavitha Rajan', phone: '9876543217', address: '18, Hill View, Ooty - 643001', gstin: '', created_at: '2026-05-20' },
+  { id: 9, name: 'Dinesh Kumar', phone: '9876543218', address: '9, Old Town, Vellore - 632001', gstin: '', created_at: '2026-06-10' },
+  { id: 10, name: 'Saranya Murugan', phone: '9876543219', address: '14, Temple St, Thanjavur - 613001', gstin: '', created_at: '2026-07-01' },
+];
+
+export const mockProducts = [
+  { id: 1, item_code: 'RNG-001', name: 'Gold Ring - Floral Design', category: 'Ring', metal: 'Gold', purity: '22K', gross_weight: 5.5, stone_weight: 0.3, net_weight: 5.2, making_charge: 2000, wastage_percent: 2, status: 'AVAILABLE' },
+  { id: 2, item_code: 'CHN-001', name: 'Gold Chain - Rope Style', category: 'Chain', metal: 'Gold', purity: '22K', gross_weight: 12.0, stone_weight: 0, net_weight: 12.0, making_charge: 3500, wastage_percent: 2.5, status: 'AVAILABLE' },
+  { id: 3, item_code: 'NKL-001', name: 'Necklace - Antique Finish', category: 'Necklace', metal: 'Gold', purity: '22K', gross_weight: 35.0, stone_weight: 2.5, net_weight: 32.5, making_charge: 12000, wastage_percent: 3, status: 'AVAILABLE' },
+  { id: 4, item_code: 'BNG-001', name: 'Bangle Set (2 pcs)', category: 'Bangle', metal: 'Gold', purity: '22K', gross_weight: 22.0, stone_weight: 0, net_weight: 22.0, making_charge: 6000, wastage_percent: 2, status: 'AVAILABLE' },
+  { id: 5, item_code: 'ERG-001', name: 'Earrings - Jhumka', category: 'Earrings', metal: 'Gold', purity: '22K', gross_weight: 6.8, stone_weight: 0.5, net_weight: 6.3, making_charge: 2500, wastage_percent: 2, status: 'SOLD' },
+  { id: 6, item_code: 'BRC-001', name: 'Gold Bracelet - Fancy', category: 'Bracelet', metal: 'Gold', purity: '18K', gross_weight: 8.5, stone_weight: 0.8, net_weight: 7.7, making_charge: 3000, wastage_percent: 1.5, status: 'AVAILABLE' },
+  { id: 7, item_code: 'PDT-001', name: 'Pendant - Om Design', category: 'Pendant', metal: 'Gold', purity: '22K', gross_weight: 3.2, stone_weight: 0, net_weight: 3.2, making_charge: 800, wastage_percent: 1.5, status: 'AVAILABLE' },
+  { id: 8, item_code: 'RNG-002', name: 'Diamond Ring - Solitaire', category: 'Ring', metal: 'Gold', purity: '18K', gross_weight: 4.5, stone_weight: 1.2, net_weight: 3.3, making_charge: 8000, wastage_percent: 1, status: 'AVAILABLE' },
+  { id: 9, item_code: 'SLV-001', name: 'Silver Anklet Pair', category: 'Other', metal: 'Silver', purity: '999', gross_weight: 45.0, stone_weight: 0, net_weight: 45.0, making_charge: 500, wastage_percent: 1, status: 'AVAILABLE' },
+  { id: 10, item_code: 'NKL-002', name: 'Stone Necklace - Ruby', category: 'Necklace', metal: 'Gold', purity: '22K', gross_weight: 28.0, stone_weight: 5.0, net_weight: 23.0, making_charge: 9000, wastage_percent: 2.5, status: 'SOLD' },
+  { id: 11, item_code: 'CHN-002', name: 'Thin Gold Chain', category: 'Chain', metal: 'Gold', purity: '24K', gross_weight: 8.0, stone_weight: 0, net_weight: 8.0, making_charge: 1800, wastage_percent: 2, status: 'AVAILABLE' },
+  { id: 12, item_code: 'BNG-002', name: 'Plain Bangle (Single)', category: 'Bangle', metal: 'Gold', purity: '22K', gross_weight: 8.5, stone_weight: 0, net_weight: 8.5, making_charge: 1500, wastage_percent: 2, status: 'AVAILABLE' },
+  { id: 13, item_code: 'RNG-003', name: 'Gents Ring - Broad', category: 'Ring', metal: 'Gold', purity: '22K', gross_weight: 9.5, stone_weight: 0, net_weight: 9.5, making_charge: 2800, wastage_percent: 2, status: 'AVAILABLE' },
+  { id: 14, item_code: 'ERG-002', name: 'Earrings - Stud', category: 'Earrings', metal: 'Gold', purity: '18K', gross_weight: 2.8, stone_weight: 0.4, net_weight: 2.4, making_charge: 1200, wastage_percent: 1, status: 'AVAILABLE' },
+  { id: 15, item_code: 'PDT-002', name: 'Pendant - Lakshmi', category: 'Pendant', metal: 'Gold', purity: '22K', gross_weight: 4.5, stone_weight: 0, net_weight: 4.5, making_charge: 1200, wastage_percent: 2, status: 'AVAILABLE' },
+];
+
+export const mockMetalRates = [
+  { id: 1, metal: 'Gold', purity: '24K', rate_per_gram: 7100, updated_at: '2026-08-21' },
+  { id: 2, metal: 'Gold', purity: '22K', rate_per_gram: 6500, updated_at: '2026-08-21' },
+  { id: 3, metal: 'Gold', purity: '18K', rate_per_gram: 5300, updated_at: '2026-08-21' },
+  { id: 4, metal: 'Silver', purity: '999', rate_per_gram: 85, updated_at: '2026-08-21' },
+];
+
+export const mockInvoices = [
+  {
+    id: 1024, invoice_number: 'INV-1024', customer_id: 1, customer_name: 'Arun Kumar', customer_phone: '9876543210',
+    invoice_date: '2026-08-21', subtotal: 43800, discount: 0, gst_rate: 3, gst_amount: 1314, grand_total: 45114,
+    paid_amount: 45114, balance_amount: 0, payment_status: 'PAID', created_at: '2026-08-21',
+    items: [
+      { description: 'Gold Ring - Floral Design', purity: '22K', gross_weight: 5.5, stone_weight: 0.3, net_weight: 5.2, gold_rate: 6500, metal_value: 33800, wastage_percent: 2, wastage_amount: 676, making_charge: 2000, stone_charge: 1000, discount: 0, item_total: 37476 },
+      { description: 'Gold Chain - Rope Style', purity: '22K', gross_weight: 6.0, stone_weight: 0, net_weight: 6.0, gold_rate: 6500, metal_value: 39000, wastage_percent: 2.5, wastage_amount: 975, making_charge: 1800, stone_charge: 0, discount: 500, item_total: 41275 },
+    ],
+    payments: [{ payment_method: 'UPI', amount: 45114 }],
+  },
+  {
+    id: 1023, invoice_number: 'INV-1023', customer_id: 2, customer_name: 'Priya Sharma', customer_phone: '9876543211',
+    invoice_date: '2026-08-21', subtotal: 30800, discount: 0, gst_rate: 3, gst_amount: 924, grand_total: 31724,
+    paid_amount: 20000, balance_amount: 11724, payment_status: 'PARTIAL', created_at: '2026-08-21',
+    items: [
+      { description: 'Earrings - Jhumka Set', purity: '22K', gross_weight: 6.8, stone_weight: 0.5, net_weight: 6.3, gold_rate: 6500, metal_value: 40950, wastage_percent: 2, wastage_amount: 819, making_charge: 2500, stone_charge: 1500, discount: 0, item_total: 45769 },
+    ],
+    payments: [{ payment_method: 'Cash', amount: 20000 }],
+  },
+  {
+    id: 1022, invoice_number: 'INV-1022', customer_id: 3, customer_name: 'Rajesh Nair', customer_phone: '9876543212',
+    invoice_date: '2026-08-20', subtotal: 95000, discount: 2000, gst_rate: 3, gst_amount: 2790, grand_total: 95790,
+    paid_amount: 95790, balance_amount: 0, payment_status: 'PAID', created_at: '2026-08-20',
+    items: [],
+    payments: [{ payment_method: 'Bank Transfer', amount: 95790 }],
+  },
+  {
+    id: 1021, invoice_number: 'INV-1021', customer_id: 4, customer_name: 'Lakshmi Devi', customer_phone: '9876543213',
+    invoice_date: '2026-08-20', subtotal: 55000, discount: 0, gst_rate: 3, gst_amount: 1650, grand_total: 56650,
+    paid_amount: 0, balance_amount: 56650, payment_status: 'PENDING', created_at: '2026-08-20',
+    items: [],
+    payments: [],
+  },
+  {
+    id: 1020, invoice_number: 'INV-1020', customer_id: 5, customer_name: 'Suresh Babu', customer_phone: '9876543214',
+    invoice_date: '2026-08-19', subtotal: 35000, discount: 500, gst_rate: 3, gst_amount: 1035, grand_total: 35535,
+    paid_amount: 35535, balance_amount: 0, payment_status: 'PAID', created_at: '2026-08-19',
+    items: [],
+    payments: [{ payment_method: 'Cash', amount: 35535 }],
+  },
+];
+
+export const mockDashboardStats = {
+  todaySales: 245600,
+  todayBills: 18,
+  totalCustomers: 532,
+  pendingPayments: 40500,
+  todayGst: 7216,
+};
+
+export const mockSettings = {
+  shop_name: 'Sri Sai Jewels',
+  shop_address: '123, Temple Street, Chennai - 600001',
+  shop_phone: '+91 98765 43210',
+  gstin: '33AABCS1234F1Z5',
+  gst_rate: '3.0',
+  invoice_prefix: 'INV-',
+  currency: 'INR',
+  rounding_method: 'nearest',
+  making_charge_method: 'fixed',
+  wastage_method: 'percentage',
+  default_invoice_format: 'A4',
+};
+
+export const mockPendingPayments = [
+  { customer: 'Priya Sharma', invoice: 'INV-1023', total: 31724, paid: 20000, balance: 11724, status: 'PARTIAL' },
+  { customer: 'Lakshmi Devi', invoice: 'INV-1021', total: 56650, paid: 0, balance: 56650, status: 'PENDING' },
+  { customer: 'Meena Krishnan', invoice: 'INV-1018', total: 18900, paid: 10000, balance: 8900, status: 'PARTIAL' },
+  { customer: 'Saranya Murugan', invoice: 'INV-1015', total: 72500, paid: 50000, balance: 22500, status: 'PARTIAL' },
+];
