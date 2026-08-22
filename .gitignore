@@ -7,11 +7,18 @@ dist/
 **/dist/
 build/
 **/build/
+coverage/
 
 # Environment variables
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+backend/data/*.db
 
 # Logs
 *.log

@@ -1,103 +1,110 @@
 # Sri Sai Jewels — Jewellery Billing Application
-## Phase 1
 
-A desktop-first, offline jewellery billing application built for Windows.
+> **Offline-first jewellery billing application for Sri Sai Jewels.**
+
+Current Version: **Phase 1.6 (Deployable Demo & Usability Testing)**
 
 ---
 
-## How to Run
+## 🌟 Application Architecture
 
-### Step 1: Start the Backend API Server
-
-Open a terminal in the `backend` folder:
+The application is designed for an eventual **offline-first desktop environment** on shop billing counters:
 
 ```
-cd backend
-npm run dev
+[ Planned Production Architecture — Phase 2 ]
+React UI  --->  Local Node.js / Express API  --->  Local SQLite Database
 ```
 
-The server starts at: http://localhost:3001
-
-### Step 2: Start the Frontend
-
-Open another terminal in the `frontend` folder:
-
 ```
+[ Current Phase 1.6 Demo Architecture ]
+React UI  --->  Mock Data Service Layer (Browser-based Demo)
+```
+
+The Phase 1.6 browser demo operates entirely on fictional sample data, allowing non-technical shopkeepers to evaluate UI workflows, responsiveness, and invoice layouts without needing a backend server or database installation.
+
+---
+
+## ✨ Features Included in Demo
+
+- 📊 **Dashboard**: Real-time sales statistics, quick actions, recent invoices, pending collections, and current metal rates.
+- 👥 **Customer Management**: Search, add inline, view details, edit, and filter registered customers.
+- 💎 **Jewellery Inventory**: Search and filter by category (Ring, Chain, Necklace, etc.), metal (Gold, Silver, Platinum), purity (24K, 22K, 18K), and status.
+- 🧾 **New Bill & Billing Calculator**:
+  - Live calculation of Net Weight, Metal Value, Wastage %, Making Charges, Stone Charges, Discounts, GST, and Grand Total.
+  - Interactive Gold Rate and GST Rate adjustment.
+  - Split payment options (Cash, UPI, Card, Bank Transfer).
+  - Sticky mobile total bar for touch devices.
+- 📄 **A4 & 80mm Invoice Previews**:
+  - Full transparent billing breakdown in **A4 format**.
+  - Monospace receipt layout in **80mm Thermal format**.
+  - Direct browser print workflow (`window.print()`) without forced PDF saves.
+- 📱 **Mobile & Tablet Responsive**:
+  - Collapsible slide-out drawer menu with hamburger toggle (`< 1024px`).
+  - Optimized touch targets (minimum 44px) and numeric keypads (`inputMode="decimal"`).
+- 🏷️ **Shopkeeper Testing Indicator**: Prominent `TEST VERSION` badge in header to prevent confusing test data with store accounting.
+
+---
+
+## ⚠️ Demo Limitations & Safety
+
+- 🔒 **Mock Data Only**: All customers (*Arun Kumar, Priya Sharma*), phone numbers (`98765 00001`), and invoices (`DEMO-1001`) are strictly fictional.
+- 🔄 **Session Persistence**: Data added during a browser session is stored in temporary `localStorage` and may reset on browser clear.
+- 🚫 **No External Server**: The demo does NOT connect to any cloud database or external server.
+- 📌 **Do NOT Enter Real Customer Data**: Please do not input actual store financial data into this public demo.
+
+---
+
+## 🚀 Local Development Instructions
+
+### Prerequisites
+- Node.js (v18 or higher recommended)
+- npm
+
+### 1. Run Frontend Locally
+
+```bash
+# Navigate to frontend folder
 cd frontend
+
+# Install dependencies
+npm install
+
+# Start Vite local dev server
 npm run dev
 ```
 
-The application opens at: http://localhost:5173
+The application will be accessible at: `http://localhost:5173`
 
----
+### 2. Build Production Demo Bundle
 
-## Project Structure
-
-```
-sri-sai-jewels/
-├── frontend/          ← React + Vite UI
-│   └── src/
-│       ├── assets/        ← Logo
-│       ├── components/
-│       │   ├── layout/    ← Sidebar, Header
-│       │   ├── common/    ← Modal, Badge
-│       │   └── invoice/   ← A4, Thermal80, PrintPreview
-│       ├── pages/         ← All 10 pages
-│       ├── data/          ← Mock data
-│       └── utils/         ← billingCalculator.js
-│
-├── backend/           ← Node.js + Express API
-│   ├── server.js
-│   └── src/
-│       ├── database/  ← db.js, schema.sql
-│       ├── routes/    ← customers, products, invoices, metalRates, settings
-│       └── services/  ← Business logic layer
-│
-└── README.md
+```bash
+cd frontend
+npm run build
 ```
 
----
-
-## Phase 1 Features
-
-- ✅ Sri Sai Jewels branding and logo
-- ✅ Sidebar navigation with all sections
-- ✅ Dashboard with stats, recent invoices, pending payments, metal rates, quick actions
-- ✅ Customer Management (add, edit, view, delete, search)
-- ✅ Jewellery Inventory (add, edit, view, delete, filter by category/metal/purity/status)
-- ✅ New Bill — full billing workflow with live calculations
-- ✅ Bills / Invoices history with search and filters
-- ✅ Payments page with method breakdown
-- ✅ Reports page with sales and GST summary
-- ✅ Metal Rates — editable rates
-- ✅ Settings — Shop Details, Billing, GST, Printing
-- ✅ Backup & Restore UI
-- ✅ A4 Invoice Template (professional, full transparent breakdown)
-- ✅ 80mm Thermal Receipt Template (compact, monospace, separate from A4)
-- ✅ Direct Print workflow (window.print — no PDF saving)
-- ✅ Isolated billing calculator (billingCalculator.js)
-- ✅ SQLite schema (sql.js — no native compilation required)
+The optimized static bundle will be generated in `frontend/dist/`.
 
 ---
 
-## Technology Stack
+## 📋 Testing Guide
+
+For non-technical shopkeeper testing instructions and a usability feedback checklist, please refer to [TESTING.md](./TESTING.md).
+
+---
+
+## 🛠️ Technology Stack
 
 | Layer | Technology |
-|-------|-----------|
-| Frontend | React 18 + Vite |
-| UI Icons | Lucide React |
-| Fonts | Google Fonts (Playfair Display + Inter) |
-| Backend | Node.js + Express |
-| Database | SQLite via sql.js (pure JavaScript) |
-| Styling | Vanilla CSS with design tokens |
+|---|---|
+| Frontend Framework | React 19 + Vite |
+| Icons | Lucide React |
+| Typography | Google Fonts (Playfair Display + Inter) |
+| Styling | Vanilla CSS with custom tokens & media queries |
+| Demo Service Layer | `mockDataService.js` (Local State / localStorage) |
+| Planned Backend (Phase 2) | Node.js + Express + SQLite |
 
 ---
 
-## Phase 1 Limitations (To be addressed in Phase 2)
+## 📄 License & Attribution
 
-- Mock data is used on frontend (no live API connection yet)
-- Backup/Restore is UI only (no file operations)
-- Invoice number generation is temporary (uses timestamp)
-- No data persistence on refresh (mock state only)
-- Printing opens a new window (no Electron integration yet)
-- No Electron packaging yet (will need Electron for true Windows .exe)
+Sri Sai Jewels — Confidential Shopkeeper Usability Testing Release.
