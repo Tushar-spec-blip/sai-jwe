@@ -1,31 +1,43 @@
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, Search, CheckCircle, UserCheck, UserPlus, User } from 'lucide-react';
-import { mockCustomers, mockProducts, mockMetalRates } from '../data/mockData';
+import { Plus, Trash2, Search, CheckCircle, UserCheck, UserPlus, User, RotateCcw } from 'lucide-react';
+import { mockCustomers, mockProducts } from '../data/mockData';
 import { calculateInvoice, calculateItem, calculatePaymentStatus, formatCurrency } from '../utils/billingCalculator';
 import PrintPreviewModal from '../components/invoice/PrintPreviewModal';
 import { useSettings } from '../context/SettingsContext';
+import { useMetalRates } from '../context/MetalRatesContext';
 
 const PAYMENT_METHODS = ['Cash', 'UPI', 'Card', 'Bank Transfer'];
 
-const newItem = () => ({
-  _id: Math.random(),
-  product_id: null,
-  item_code: '',
-  description: '',
-  metal: 'Gold',
-  purity: '22K',
-  gross_weight: '',
-  stone_weight: 0,
-  gold_rate: 6500,
-  wastage_percent: 2,
-  making_charge: '',
-  stone_charge: 0,
-  discount: 0,
-});
-
 export default function NewBill({ onNavigate }) {
   const { settings } = useSettings();
+  const { rates, getRateFor } = useMetalRates();
   const [customerList, setCustomerList] = useState(mockCustomers);
+
+  const createNewItem = (metal = 'Gold') => {
+    const isSilver = metal === 'Silver';
+    const defaultPurity = isSilver ? '999' : '22K';
+    const liveRate = getRateFor(isSilver ? 'Silver' : 'Gold', defaultPurity);
+    return {
+      _id: Math.random(),
+      product_id: null,
+      item_code: '',
+      description: '',
+      metal: isSilver ? 'Silver' : 'Gold',
+      purity: defaultPurity,
+      gross_weight: '',
+      stone_weight: 0,
+      gold_rate: liveRate || (isSilver ? 85 : 6500),
+      wastage_mode: 'percentage',
+      wastage_percent: isSilver ? 1 : 2,
+      wastage_weight: '',
+      making_charge: '',
+      stone_charge: 0,
+      discount: 0,
+    };
+  };
+
+  // Sale Type State: null (Selection Menu) | 'GOLD' | 'SILVER'
+  const [saleType, setSaleType] = useState(null);
 
   // Customer selection modes: 'walkin' | 'existing' | 'new'
   const [customerMode, setCustomerMode] = useState('walkin');
@@ -37,7 +49,7 @@ export default function NewBill({ onNavigate }) {
   // Search existing customer dropdown filter
   const [customerSearch, setCustomerSearch] = useState('');
 
-  const [items, setItems] = useState([newItem()]);
+  const [items, setItems] = useState([createNewItem('Gold')]);
   const [globalDiscount, setGlobalDiscount] = useState(0);
   const [gstRate, setGstRate] = useState(parseFloat(settings.gst_rate) || 3);
   const [payments, setPayments] = useState([{ method: 'Cash', amount: '' }]);
@@ -52,24 +64,45 @@ export default function NewBill({ onNavigate }) {
     }
   }, [settings.gst_rate]);
 
+  const handleSelectSaleType = (type) => {
+    const initialMetal = type === 'SILVER' ? 'Silver' : 'Gold';
+    setItems([createNewItem(initialMetal)]);
+    setSaleType(type);
+  };
+
+  const handleChangeSaleType = () => {
+    const hasItems = items.some(it => (it.description && it.description.trim()) || parseFloat(it.gross_weight) > 0);
+    if (hasItems) {
+      if (!window.confirm('Are you sure you want to change sale type? Any unsaved billing data will be reset.')) {
+        return;
+      }
+    }
+    setSaleType(null);
+    setItems([]);
+    setSavedInvoice(null);
+    setShowPreview(false);
+  };
+
   const filteredCustomers = customerList.filter(c =>
     c.name.toLowerCase().includes(customerSearch.toLowerCase()) ||
     c.phone.includes(customerSearch)
   );
 
-  // Calculate invoice totals
+  // Calculate invoice totals (only when a sale type is active)
   const calc = calculateInvoice(
-    items.map(item => ({
+    saleType ? items.map(item => ({
       ...item,
       gross_weight: parseFloat(item.gross_weight) || 0,
       stone_weight: parseFloat(item.stone_weight) || 0,
       gold_rate: parseFloat(item.gold_rate) || 0,
+      wastage_mode: item.wastage_mode || 'percentage',
       wastage_percent: parseFloat(item.wastage_percent) || 0,
+      wastage_weight: parseFloat(item.wastage_weight) || 0,
       making_charge: parseFloat(item.making_charge) || 0,
       stone_charge: parseFloat(item.stone_charge) || 0,
       discount: parseFloat(item.discount) || 0,
-    })),
-    { globalDiscount: parseFloat(globalDiscount) || 0, gstRate }
+    })) : [],
+    { globalDiscount: parseFloat(globalDiscount) || 0, gstRate, roundingMethod: settings.rounding_method || 'nearest' }
   );
 
   const paymentDetails = calculatePaymentStatus(
@@ -78,18 +111,36 @@ export default function NewBill({ onNavigate }) {
   );
 
   const setItem = (id, field, value) => {
-    setItems(prev => prev.map(it => it._id === id ? { ...it, [field]: value } : it));
+    setItems(prev => prev.map(it => {
+      if (it._id !== id) return it;
+      const updated = { ...it, [field]: value };
+      if (field === 'purity') {
+        const liveRate = getRateFor(it.metal, value);
+        if (liveRate) updated.gold_rate = liveRate;
+      }
+      return updated;
+    }));
   };
 
-  const addItem = () => setItems(prev => [...prev, newItem()]);
+  const addItem = () => setItems(prev => [...prev, createNewItem(saleType === 'SILVER' ? 'Silver' : 'Gold')]);
   const removeItem = (id) => setItems(prev => prev.length > 1 ? prev.filter(it => it._id !== id) : prev);
+
+  const clearItem = (id) => {
+    const isSilver = saleType === 'SILVER';
+    const initial = createNewItem(isSilver ? 'Silver' : 'Gold');
+    setItems(prev => prev.map(it => it._id === id ? { ...initial, _id: id } : it));
+  };
 
   const addPaymentRow = () => setPayments(prev => [...prev, { method: 'Cash', amount: '' }]);
   const setPayment = (i, field, value) => setPayments(prev => prev.map((p, idx) => idx === i ? { ...p, [field]: value } : p));
   const removePayment = (i) => setPayments(prev => prev.length > 1 ? prev.filter((_, idx) => idx !== i) : prev);
 
   const handleSelectProduct = (item_id, product) => {
-    const rate = mockMetalRates.find(r => r.metal === product.metal && r.purity === product.purity);
+    const liveRate = getRateFor(product.metal, product.purity);
+    const net = Math.max(0, (parseFloat(product.gross_weight) || 0) - (parseFloat(product.stone_weight) || 0));
+    const wasPct = parseFloat(product.wastage_percent) || 0;
+    const wasWt = (net * (wasPct / 100)).toFixed(3);
+
     setItems(prev => prev.map(it => it._id === item_id ? {
       ...it,
       product_id: product.id,
@@ -99,8 +150,10 @@ export default function NewBill({ onNavigate }) {
       purity: product.purity,
       gross_weight: product.gross_weight,
       stone_weight: product.stone_weight,
-      gold_rate: rate?.rate_per_gram || it.gold_rate,
-      wastage_percent: product.wastage_percent,
+      gold_rate: liveRate || (product.metal.toLowerCase() === 'silver' ? 85 : 6500),
+      wastage_mode: 'percentage',
+      wastage_percent: wasPct,
+      wastage_weight: wasWt,
       making_charge: product.making_charge,
     } : it));
   };
@@ -138,7 +191,10 @@ export default function NewBill({ onNavigate }) {
       net_weight: it.net_weight,
       gold_rate: parseFloat(it.gold_rate) || 0,
       metal_value: it.metal_value,
-      wastage_percent: parseFloat(it.wastage_percent) || 0,
+      gold_value: it.metal_value,
+      wastage_mode: it.wastage_mode,
+      wastage_percent: it.wastage_percent,
+      wastage_weight: it.wastage_weight,
       wastage_amount: it.wastage_amount,
       making_charge: parseFloat(it.making_charge) || 0,
       stone_charge: parseFloat(it.stone_charge) || 0,
@@ -150,6 +206,8 @@ export default function NewBill({ onNavigate }) {
     const invoice = {
       id: Date.now(),
       invoice_number: `${prefix}${Date.now().toString().slice(-4)}`,
+      sale_type: saleType,
+      sale_type_label: saleType === 'SILVER' ? 'Silver Sale' : 'Gold Sale',
       customer_id: selectedCustomer?.id || null,
       customer_name: selectedCustomer?.name || 'Walk-in Customer',
       customer_phone: selectedCustomer?.phone || '',
@@ -159,8 +217,14 @@ export default function NewBill({ onNavigate }) {
       items: invoiceItems,
       subtotal: calc.subtotal,
       discount: calc.globalDiscount,
-      gst_rate: gstRate,
+      before_tax: calc.beforeTax,
+      gst_rate: calc.gstRate,
+      cgst_rate: calc.cgstRate,
+      sgst_rate: calc.sgstRate,
+      cgst_amount: calc.cgstAmount,
+      sgst_amount: calc.sgstAmount,
       gst_amount: calc.gstAmount,
+      after_tax: calc.afterTax,
       grand_total: calc.grandTotal,
       paid_amount: paymentDetails.paidAmount,
       balance_amount: paymentDetails.balanceAmount,
@@ -176,7 +240,7 @@ export default function NewBill({ onNavigate }) {
   const handleNewBill = () => {
     setCustomerMode('walkin');
     setSelectedCustomer({ name: 'Walk-in Customer', phone: '', address: '', gstin: '' });
-    setItems([newItem()]);
+    setItems([createNewItem(saleType === 'SILVER' ? 'Silver' : 'Gold')]);
     setGlobalDiscount(0);
     setPayments([{ method: 'Cash', amount: '' }]);
     setNotes('');
@@ -184,15 +248,105 @@ export default function NewBill({ onNavigate }) {
     setShowPreview(false);
   };
 
+  // STEP A: SALE TYPE SELECTION SCREEN
+  if (!saleType) {
+    return (
+      <div>
+        <div className="page-header">
+          <div className="page-header-left">
+            <h2>New Bill</h2>
+            <p>Select transaction sale type to start billing</p>
+          </div>
+          <div className="page-header-actions">
+            <button className="btn btn-secondary" onClick={() => onNavigate('/bills')}>View All Bills</button>
+          </div>
+        </div>
+
+        <div style={{ maxWidth: 760, margin: '30px auto 0', padding: '0 16px' }}>
+          <div style={{ textAlign: 'center', marginBottom: 32 }}>
+            <h2 style={{ fontSize: 24, fontWeight: 700, color: 'var(--text-dark)', marginBottom: 6, letterSpacing: '0.02em' }}>NEW BILL</h2>
+            <p style={{ fontSize: 14, color: 'var(--text-muted)' }}>Select Sale Type</p>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 24 }}>
+            {/* GOLD SALE CARD */}
+            <div
+              onClick={() => handleSelectSaleType('GOLD')}
+              style={{
+                background: 'linear-gradient(135deg, #FFFDF5 0%, #FAF2D8 100%)',
+                border: '2px solid #C9A84C',
+                borderRadius: 'var(--radius-lg)',
+                padding: '36px 24px',
+                cursor: 'pointer',
+                textAlign: 'center',
+                boxShadow: 'var(--shadow-md)',
+              }}
+            >
+              <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'linear-gradient(135deg, rgba(201,168,76,0.25) 0%, rgba(201,168,76,0.1) 100%)', border: '1.5px solid rgba(201,168,76,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', boxShadow: '0 4px 12px rgba(201,168,76,0.15)' }}>
+                {/* Gold Logo in Lucide stroke aesthetic */}
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#8B6914" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M6 3h12l3 6H3l3-6z" fill="rgba(201,168,76,0.25)" />
+                  <path d="M3 9v9a2 2 0 002 2h14a2 2 0 002-2V9" />
+                  <circle cx="12" cy="14" r="3" fill="rgba(201,168,76,0.3)" />
+                  <path d="M12 12.5v3M10.5 14h3" />
+                </svg>
+              </div>
+              <h3 style={{ fontSize: 22, fontWeight: 700, color: '#8B6914', marginBottom: 8 }}>GOLD SALE</h3>
+              <p style={{ fontSize: 13, color: '#7A6A4A', lineHeight: 1.6, marginBottom: 20 }}>
+                Create a new gold jewellery sale
+              </p>
+              <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '12px', background: '#8B6914', borderColor: '#8B6914' }}>
+                Select Gold Sale →
+              </button>
+            </div>
+
+            {/* SILVER SALE CARD */}
+            <div
+              onClick={() => handleSelectSaleType('SILVER')}
+              style={{
+                background: 'linear-gradient(135deg, #F8FAFC 0%, #E2E8F0 100%)',
+                border: '2px solid #94A3B8',
+                borderRadius: 'var(--radius-lg)',
+                padding: '36px 24px',
+                cursor: 'pointer',
+                textAlign: 'center',
+                boxShadow: 'var(--shadow-md)',
+              }}
+            >
+              <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'linear-gradient(135deg, rgba(148,163,184,0.25) 0%, rgba(148,163,184,0.1) 100%)', border: '1.5px solid rgba(148,163,184,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', boxShadow: '0 4px 12px rgba(148,163,184,0.15)' }}>
+                {/* Silver Logo in Lucide stroke aesthetic */}
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#334155" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="9" fill="rgba(148,163,184,0.25)" />
+                  <circle cx="12" cy="12" r="5" strokeDasharray="2 2" />
+                  <path d="M12 9v6M9.5 12h5" />
+                </svg>
+              </div>
+              <h3 style={{ fontSize: 22, fontWeight: 700, color: '#334155', marginBottom: 8 }}>SILVER SALE</h3>
+              <p style={{ fontSize: 13, color: '#64748B', lineHeight: 1.6, marginBottom: 20 }}>
+                Create a new silver jewellery sale
+              </p>
+              <button className="btn btn-secondary" style={{ width: '100%', justifyContent: 'center', padding: '12px' }}>
+                Select Silver Sale →
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div>
       <div className="page-header">
         <div className="page-header-left">
-          <h2>New Bill</h2>
-          <p>Create a new billing invoice</p>
+          <h2>New Bill — {saleType === 'SILVER' ? 'Silver Sale' : 'Gold Sale'}</h2>
+          <p>Create a new {saleType === 'SILVER' ? 'silver' : 'gold'} jewellery billing invoice</p>
         </div>
-        <div className="page-header-actions">
-          <button className="btn btn-secondary" onClick={() => onNavigate('/bills')}>View All Bills</button>
+        <div className="page-header-actions" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <button className="btn btn-secondary" onClick={handleChangeSaleType} title="Return to sale type selection">
+            ← Change Sale Type
+          </button>
+          <button className="btn btn-ghost" onClick={() => onNavigate('/bills')}>View All Bills</button>
         </div>
       </div>
 
@@ -366,14 +520,19 @@ export default function NewBill({ onNavigate }) {
             <div className="billing-section-body">
               {items.map((item, idx) => {
                 const calcItem = calculateItem({
+                  ...item,
                   gross_weight: parseFloat(item.gross_weight) || 0,
                   stone_weight: parseFloat(item.stone_weight) || 0,
                   gold_rate: parseFloat(item.gold_rate) || 0,
+                  wastage_mode: item.wastage_mode || 'percentage',
                   wastage_percent: parseFloat(item.wastage_percent) || 0,
+                  wastage_weight: parseFloat(item.wastage_weight) || 0,
                   making_charge: parseFloat(item.making_charge) || 0,
                   stone_charge: parseFloat(item.stone_charge) || 0,
                   discount: parseFloat(item.discount) || 0,
                 });
+
+                const isWeightMode = (item.wastage_mode || 'percentage') === 'weight';
 
                 return (
                   <div className="bill-item-row" key={item._id}>
@@ -386,13 +545,21 @@ export default function NewBill({ onNavigate }) {
                             if (prod) handleSelectProduct(item._id, prod);
                           }}>
                           <option value="">Select from inventory...</option>
-                          {mockProducts.filter(p => p.status === 'AVAILABLE').map(p => (
-                            <option key={p.id} value={p.id}>{p.item_code} — {p.name}</option>
-                          ))}
+                          {mockProducts
+                            .filter(p => p.status === 'AVAILABLE' && (p.metal || '').toUpperCase() === (saleType || 'GOLD'))
+                            .map(p => (
+                              <option key={p.id} value={p.id}>{p.item_code} — {p.name}</option>
+                            ))}
                         </select>
-                        <button className="btn btn-danger btn-sm" onClick={() => removeItem(item._id)} aria-label="Remove item">
-                          <Trash2 size={13} />
-                        </button>
+                        {items.length > 1 ? (
+                          <button className="btn btn-danger btn-sm" onClick={() => removeItem(item._id)} aria-label="Remove item" title="Remove item">
+                            <Trash2 size={13} />
+                          </button>
+                        ) : (
+                          <button className="btn btn-secondary btn-sm" onClick={() => clearItem(item._id)} aria-label="Clear fields" title="Clear all fields for this item">
+                            <RotateCcw size={13} /> Clear
+                          </button>
+                        )}
                       </div>
                     </div>
                     <div className="bill-item-grid">
@@ -407,7 +574,9 @@ export default function NewBill({ onNavigate }) {
                       <div className="form-group">
                         <label className="form-label">Purity</label>
                         <select className="form-select" value={item.purity} onChange={e => setItem(item._id, 'purity', e.target.value)}>
-                          {['24K', '22K', '18K', '14K', '999', 'Other'].map(p => <option key={p}>{p}</option>)}
+                          {(saleType === 'SILVER' ? ['999', 'Other'] : ['24K', '22K', '18K', '14K', 'Other']).map(p => (
+                            <option key={p} value={p}>{p}</option>
+                          ))}
                         </select>
                       </div>
                       <div className="form-group">
@@ -426,10 +595,59 @@ export default function NewBill({ onNavigate }) {
                         <label className="form-label">Gold Rate (Rs./g)</label>
                         <input className="form-input" type="number" inputMode="numeric" step="1" value={item.gold_rate} onChange={e => setItem(item._id, 'gold_rate', e.target.value)} />
                       </div>
-                      <div className="form-group">
-                        <label className="form-label">Wastage %</label>
-                        <input className="form-input" type="number" inputMode="decimal" step="0.1" value={item.wastage_percent} onChange={e => setItem(item._id, 'wastage_percent', e.target.value)} placeholder="0.0" />
+
+                      {/* Segmented Wastage Type Control */}
+                      <div className="form-group" style={{ gridColumn: 'span 2' }}>
+                        <label className="form-label">Wastage Type</label>
+                        <div style={{ display: 'flex', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', overflow: 'hidden', height: 38 }}>
+                          <button
+                            type="button"
+                            style={{
+                              flex: 1,
+                              border: 'none',
+                              background: !isWeightMode ? 'var(--gold-dark)' : '#f3f4f6',
+                              color: !isWeightMode ? 'white' : 'var(--text-dark)',
+                              fontWeight: !isWeightMode ? 600 : 500,
+                              fontSize: 12,
+                              cursor: 'pointer',
+                              transition: 'all 0.15s ease'
+                            }}
+                            onClick={() => setItem(item._id, 'wastage_mode', 'percentage')}
+                          >
+                            Percentage (%)
+                          </button>
+                          <button
+                            type="button"
+                            style={{
+                              flex: 1,
+                              border: 'none',
+                              borderLeft: '1px solid var(--border)',
+                              background: isWeightMode ? 'var(--gold-dark)' : '#f3f4f6',
+                              color: isWeightMode ? 'white' : 'var(--text-dark)',
+                              fontWeight: isWeightMode ? 600 : 500,
+                              fontSize: 12,
+                              cursor: 'pointer',
+                              transition: 'all 0.15s ease'
+                            }}
+                            onClick={() => setItem(item._id, 'wastage_mode', 'weight')}
+                          >
+                            Weight (g)
+                          </button>
+                        </div>
                       </div>
+
+                      {isWeightMode ? (
+                        <div className="form-group">
+                          <label className="form-label">Wastage (g)</label>
+                          <input className="form-input" type="number" inputMode="decimal" step="0.001" value={item.wastage_weight} onChange={e => setItem(item._id, 'wastage_weight', e.target.value)} placeholder="0.000" />
+                        </div>
+                      ) : (
+                        <div className="form-group">
+                          <label className="form-label">Wastage (%)</label>
+                          <input className="form-input" type="number" inputMode="decimal" step="0.1" value={item.wastage_percent} onChange={e => setItem(item._id, 'wastage_percent', e.target.value)} placeholder="0.0" />
+                        </div>
+                      )}
+
                       <div className="form-group">
                         <label className="form-label">Making Charge (Rs.)</label>
                         <input className="form-input" type="number" inputMode="numeric" step="1" value={item.making_charge} onChange={e => setItem(item._id, 'making_charge', e.target.value)} placeholder="0" />
@@ -444,10 +662,15 @@ export default function NewBill({ onNavigate }) {
                       </div>
                     </div>
 
-                    {/* Live calculation preview */}
+                    {/* Live calculation preview (Internal Shopkeeper Verification Only) */}
                     <div className="bill-item-calculation">
-                      <div className="calc-row"><span className="label">Gold Value</span><span className="value">{formatCurrency(calcItem.metal_value)}</span></div>
-                      <div className="calc-row"><span className="label">Wastage ({item.wastage_percent}%)</span><span className="value">+ {formatCurrency(calcItem.wastage_amount)}</span></div>
+                      <div className="calc-row"><span className="label">{saleType === 'SILVER' ? 'Silver Value' : 'Gold Value'} (Internal Only)</span><span className="value">{formatCurrency(calcItem.metal_value)}</span></div>
+                      <div className="calc-row">
+                        <span className="label">
+                          Wastage ({isWeightMode ? `${calcItem.wastage_weight.toFixed(3)} g` : `${calcItem.wastage_percent}%`}) — {isWeightMode ? `${calcItem.wastage_percent.toFixed(2)}%` : `${calcItem.wastage_weight.toFixed(3)} g`}
+                        </span>
+                        <span className="value">+ {formatCurrency(calcItem.wastage_amount)}</span>
+                      </div>
                       <div className="calc-row"><span className="label">Making Charge</span><span className="value">+ {formatCurrency(calcItem.making_charge)}</span></div>
                       {calcItem.stone_charge > 0 && <div className="calc-row"><span className="label">Stone Charge</span><span className="value">+ {formatCurrency(calcItem.stone_charge)}</span></div>}
                       {calcItem.discount > 0 && <div className="calc-row"><span className="label">Discount</span><span className="value" style={{ color: '#16a34a' }}>- {formatCurrency(calcItem.discount)}</span></div>}
@@ -472,9 +695,9 @@ export default function NewBill({ onNavigate }) {
                   <input className="form-input" type="number" inputMode="numeric" step="1" value={globalDiscount} onChange={e => setGlobalDiscount(e.target.value)} placeholder="0" />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">GST Rate (%)</label>
+                  <label className="form-label">Total GST Rate (%)</label>
                   <input className="form-input" type="number" inputMode="decimal" step="0.01" value={gstRate} onChange={e => setGstRate(parseFloat(e.target.value) || 0)} />
-                  <span className="form-hint">Default from Settings: {settings.gst_rate}%</span>
+                  <span className="form-hint">Splits to CGST ({(gstRate / 2).toFixed(2)}%) + SGST ({(gstRate / 2).toFixed(2)}%)</span>
                 </div>
                 <div className="form-group">
                   <label className="form-label">Notes</label>
@@ -535,6 +758,12 @@ export default function NewBill({ onNavigate }) {
               <h3>Bill Summary</h3>
             </div>
             <div className="bill-summary-body">
+              <div className="summary-line" style={{ background: saleType === 'SILVER' ? '#f1f5f9' : 'rgba(201,168,76,0.1)', padding: '6px 10px', borderRadius: 'var(--radius-md)', marginBottom: 10 }}>
+                <span className="s-label" style={{ fontWeight: 600, color: saleType === 'SILVER' ? '#334155' : 'var(--gold-dark)' }}>Sale Type</span>
+                <span className={`badge ${saleType === 'SILVER' ? 'badge-silver' : 'badge-gold'}`}>
+                  {saleType === 'SILVER' ? 'Silver Sale 🪙' : 'Gold Sale ✨'}
+                </span>
+              </div>
               <div className="summary-line">
                 <span className="s-label">Customer</span>
                 <span className="s-value" style={{ fontSize: 13 }}>{selectedCustomer?.name || 'Walk-in'}</span>
@@ -553,13 +782,21 @@ export default function NewBill({ onNavigate }) {
                   <span className="s-value" style={{ color: '#16a34a' }}>-{formatCurrency(calc.globalDiscount)}</span>
                 </div>
               )}
-              <div className="summary-line">
-                <span className="s-label">Taxable Amount</span>
-                <span className="s-value">{formatCurrency(calc.taxableAmount)}</span>
+              <div className="summary-line" style={{ borderTop: '1px solid var(--border-light)', paddingTop: 6 }}>
+                <span className="s-label" style={{ fontWeight: 600 }}>Before Tax</span>
+                <span className="s-value" style={{ fontWeight: 600 }}>{formatCurrency(calc.beforeTax)}</span>
               </div>
               <div className="summary-line">
-                <span className="s-label">GST ({gstRate}%)</span>
-                <span className="s-value">{formatCurrency(calc.gstAmount)}</span>
+                <span className="s-label">CGST @ {calc.cgstRate.toFixed(2)}%</span>
+                <span className="s-value">{formatCurrency(calc.cgstAmount)}</span>
+              </div>
+              <div className="summary-line">
+                <span className="s-label">SGST @ {calc.sgstRate.toFixed(2)}%</span>
+                <span className="s-value">{formatCurrency(calc.sgstAmount)}</span>
+              </div>
+              <div className="summary-line" style={{ borderTop: '1px dashed var(--border-light)', paddingTop: 6 }}>
+                <span className="s-label" style={{ fontWeight: 600 }}>After Tax</span>
+                <span className="s-value" style={{ fontWeight: 600 }}>{formatCurrency(calc.afterTax)}</span>
               </div>
 
               <div className="summary-grand-total">

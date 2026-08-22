@@ -24,7 +24,14 @@ export default function Thermal80InvoiceTemplate({ invoice, shopSettings = {} })
     gstin: shopSettings.gstin || '33AABCS1234F1Z5',
   };
 
-  const taxable = (subtotal || 0) - (discount || 0);
+  const beforeTax = invoice.before_tax !== undefined ? invoice.before_tax : Math.max(0, (subtotal || 0) - (discount || 0));
+  const gstRateVal = parseFloat(gst_rate) || 3;
+  const cgstRateVal = invoice.cgst_rate !== undefined ? invoice.cgst_rate : (gstRateVal / 2);
+  const sgstRateVal = invoice.sgst_rate !== undefined ? invoice.sgst_rate : (gstRateVal / 2);
+  const cgstAmountVal = invoice.cgst_amount !== undefined ? invoice.cgst_amount : (beforeTax * (cgstRateVal / 100));
+  const sgstAmountVal = invoice.sgst_amount !== undefined ? invoice.sgst_amount : (beforeTax * (sgstRateVal / 100));
+  const afterTaxVal = invoice.after_tax !== undefined ? invoice.after_tax : (beforeTax + cgstAmountVal + sgstAmountVal);
+
   const formattedDate = invoice_date
     ? new Date(invoice_date).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: '2-digit' })
     : new Date().toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: '2-digit' });
@@ -51,7 +58,7 @@ export default function Thermal80InvoiceTemplate({ invoice, shopSettings = {} })
 
       <hr className="thermal-divider" />
 
-      {/* Items */}
+      {/* Items — Customer Facing (Gold Value & Wastage Excluded) */}
       {items.map((item, i) => (
         <div key={i} style={{ marginBottom: 8 }}>
           <div className="thermal-item-name">{item.description}</div>
@@ -60,19 +67,12 @@ export default function Thermal80InvoiceTemplate({ invoice, shopSettings = {} })
           {item.stone_weight > 0 && <div className="thermal-row"><span>Stone Wt:</span><span>{formatWeight(item.stone_weight)}</span></div>}
           <div className="thermal-row"><span>Net Wt:</span><span><strong>{formatWeight(item.net_weight)}</strong></span></div>
           <div className="thermal-row"><span>Gold Rate:</span><span>Rs. {item.gold_rate}/g</span></div>
-          <div className="thermal-row"><span>Gold Value:</span><span>{formatCurrency(item.metal_value)}</span></div>
-          {item.wastage_percent > 0 && (
-            <div className="thermal-row">
-              <span>Wastage {item.wastage_percent}%:</span>
-              <span>{formatCurrency(item.wastage_amount)}</span>
-            </div>
-          )}
           {item.making_charge > 0 && <div className="thermal-row"><span>Making:</span><span>{formatCurrency(item.making_charge)}</span></div>}
           {item.stone_charge > 0 && <div className="thermal-row"><span>Stone:</span><span>{formatCurrency(item.stone_charge)}</span></div>}
           {item.discount > 0 && <div className="thermal-row"><span>Discount:</span><span>-{formatCurrency(item.discount)}</span></div>}
           <hr className="thermal-divider" style={{ borderStyle: 'dotted' }} />
           <div className="thermal-row" style={{ fontWeight: 'bold' }}>
-            <span>Item Total:</span><span>{formatCurrency(item.item_total)}</span>
+            <span>Item Amount:</span><span>{formatCurrency(item.item_total)}</span>
           </div>
           {i < items.length - 1 && <hr className="thermal-divider" />}
         </div>
@@ -80,15 +80,15 @@ export default function Thermal80InvoiceTemplate({ invoice, shopSettings = {} })
 
       <hr className="thermal-divider" />
 
-      {/* Totals */}
-      <div className="thermal-row"><span>Subtotal:</span><span>{formatCurrency(subtotal)}</span></div>
-      {discount > 0 && <div className="thermal-row"><span>Discount:</span><span>-{formatCurrency(discount)}</span></div>}
-      <div className="thermal-row"><span>Taxable:</span><span>{formatCurrency(taxable)}</span></div>
-      <div className="thermal-row"><span>GST {gst_rate}%:</span><span>{formatCurrency(gst_amount)}</span></div>
+      {/* Totals Section */}
+      <div className="thermal-row"><span>Before Tax:</span><span><strong>{formatCurrency(beforeTax)}</strong></span></div>
+      <div className="thermal-row"><span>CGST @ {cgstRateVal.toFixed(2)}%:</span><span>{formatCurrency(cgstAmountVal)}</span></div>
+      <div className="thermal-row"><span>SGST @ {sgstRateVal.toFixed(2)}%:</span><span>{formatCurrency(sgstAmountVal)}</span></div>
+      <div className="thermal-row"><span>After Tax:</span><span><strong>{formatCurrency(afterTaxVal)}</strong></span></div>
 
       <hr className="thermal-divider" />
 
-      <div className="thermal-total">{formatCurrency(grand_total)}</div>
+      <div className="thermal-total">TOTAL: {formatCurrency(grand_total)}</div>
 
       <hr className="thermal-divider" />
 

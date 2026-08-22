@@ -1,34 +1,60 @@
 // Centralized billing calculation engine
 // All formula logic lives here — nothing is spread across UI components.
-// Phase 2 can replace/extend this without touching UI code.
+// Phase 1.7 Modular Calculation Service
 
 /**
  * Calculate a single bill item's values.
  *
- * Formula (Phase 1):
+ * Formula (Phase 1.7):
  *   Net Weight = Gross Weight - Stone Weight
- *   Gold Value = Net Weight × Gold Rate
- *   Wastage Amount = Gold Value × (Wastage% / 100)
+ *   Gold Value (Internal Only) = Net Weight × Gold Rate
+ *
+ *   Wastage Calculation:
+ *     - If wastage_mode === 'percentage':
+ *         Wastage Weight (g) = Net Weight × (Wastage % / 100)
+ *         Wastage Amount (Rs.) = Wastage Weight × Gold Rate
+ *     - If wastage_mode === 'weight':
+ *         Wastage Weight (g) = User entered wastage weight
+ *         Wastage % = (Wastage Weight / Net Weight) × 100 (for internal display)
+ *         Wastage Amount (Rs.) = Wastage Weight × Gold Rate
+ *
  *   Item Total = Gold Value + Wastage Amount + Making Charge + Stone Charge - Discount
  */
 export function calculateItem(item) {
   const grossWeight = parseFloat(item.gross_weight) || 0;
   const stoneWeight = parseFloat(item.stone_weight) || 0;
   const goldRate = parseFloat(item.gold_rate) || 0;
-  const wastagePercent = parseFloat(item.wastage_percent) || 0;
+  const wastageMode = item.wastage_mode || 'percentage'; // 'percentage' | 'weight'
+
   const makingCharge = parseFloat(item.making_charge) || 0;
   const stoneCharge = parseFloat(item.stone_charge) || 0;
   const discount = parseFloat(item.discount) || 0;
 
   const netWeight = Math.max(0, grossWeight - stoneWeight);
-  const metalValue = netWeight * goldRate;
-  const wastageAmount = metalValue * (wastagePercent / 100);
+  const metalValue = netWeight * goldRate; // Gold Value (internal)
+
+  let wastagePercent = 0;
+  let wastageWeight = 0;
+
+  if (wastageMode === 'weight') {
+    wastageWeight = parseFloat(item.wastage_weight) || 0;
+    wastagePercent = netWeight > 0 ? (wastageWeight / netWeight) * 100 : 0;
+  } else {
+    wastagePercent = parseFloat(item.wastage_percent) || 0;
+    wastageWeight = netWeight * (wastagePercent / 100);
+  }
+
+  const wastageAmount = wastageWeight * goldRate;
   const itemTotal = metalValue + wastageAmount + makingCharge + stoneCharge - discount;
 
   return {
     ...item,
     net_weight: netWeight,
     metal_value: metalValue,
+    gold_value: metalValue,
+    wastage_mode: wastageMode,
+    wastage_percent: wastagePercent,
+    wastage_weight: wastageWeight,
     wastage_amount: wastageAmount,
     item_total: Math.max(0, itemTotal),
   };
@@ -37,26 +63,58 @@ export function calculateItem(item) {
 /**
  * Calculate the full invoice totals from items + settings.
  *
- * Formula (Phase 1):
+ * Formula (Phase 1.7):
  *   Subtotal = Sum of all item_total
- *   Taxable Amount = Subtotal - Global Discount
- *   GST Amount = Taxable × GST%
- *   Grand Total = Taxable + GST Amount (rounded)
+ *   Before Tax = Subtotal - Global Discount
+ *   CGST Rate = Total GST Rate / 2
+ *   SGST Rate = Total GST Rate / 2
+ *   CGST Amount = Before Tax × (CGST Rate / 100)
+ *   SGST Amount = Before Tax × (SGST Rate / 100)
+ *   GST Amount = CGST Amount + SGST Amount
+ *   After Tax = Before Tax + GST Amount
+ *   Grand Total = After Tax (rounded based on settings)
  */
-export function calculateInvoice(items, { globalDiscount = 0, gstRate = 3 }) {
+export function calculateInvoice(items, { globalDiscount = 0, gstRate = 3, roundingMethod = 'nearest' } = {}) {
   const processedItems = items.map(calculateItem);
   const subtotal = processedItems.reduce((sum, item) => sum + item.item_total, 0);
-  const taxableAmount = Math.max(0, subtotal - globalDiscount);
-  const gstAmount = taxableAmount * (gstRate / 100);
-  const grandTotal = Math.round(taxableAmount + gstAmount);
+  const beforeTax = Math.max(0, subtotal - globalDiscount);
+
+  const parsedGst = parseFloat(gstRate) || 0;
+  const cgstRate = parsedGst / 2;
+  const sgstRate = parsedGst / 2;
+
+  const cgstAmount = beforeTax * (cgstRate / 100);
+  const sgstAmount = beforeTax * (sgstRate / 100);
+  const gstAmount = cgstAmount + sgstAmount;
+
+  const afterTax = beforeTax + gstAmount;
+
+  let grandTotal = afterTax;
+  if (roundingMethod === 'nearest') {
+    grandTotal = Math.round(afterTax);
+  } else if (roundingMethod === 'up') {
+    grandTotal = Math.ceil(afterTax);
+  } else if (roundingMethod === 'down') {
+    grandTotal = Math.floor(afterTax);
+  } else if (roundingMethod === 'none') {
+    grandTotal = afterTax;
+  } else {
+    grandTotal = Math.round(afterTax);
+  }
 
   return {
     items: processedItems,
     subtotal,
     globalDiscount,
-    taxableAmount,
-    gstRate,
+    taxableAmount: beforeTax, // backward compatibility
+    beforeTax,
+    gstRate: parsedGst,
+    cgstRate,
+    sgstRate,
+    cgstAmount,
+    sgstAmount,
     gstAmount,
+    afterTax,
     grandTotal,
   };
 }

@@ -23,7 +23,14 @@ export default function A4InvoiceTemplate({ invoice, shopSettings = {} }) {
     gstin: shopSettings.gstin || '33AABCS1234F1Z5',
   };
 
-  const taxable = (subtotal || 0) - (discount || 0);
+  const beforeTax = invoice.before_tax !== undefined ? invoice.before_tax : Math.max(0, (subtotal || 0) - (discount || 0));
+  const gstRateVal = parseFloat(gst_rate) || 3;
+  const cgstRateVal = invoice.cgst_rate !== undefined ? invoice.cgst_rate : (gstRateVal / 2);
+  const sgstRateVal = invoice.sgst_rate !== undefined ? invoice.sgst_rate : (gstRateVal / 2);
+  const cgstAmountVal = invoice.cgst_amount !== undefined ? invoice.cgst_amount : (beforeTax * (cgstRateVal / 100));
+  const sgstAmountVal = invoice.sgst_amount !== undefined ? invoice.sgst_amount : (beforeTax * (sgstRateVal / 100));
+  const afterTaxVal = invoice.after_tax !== undefined ? invoice.after_tax : (beforeTax + cgstAmountVal + sgstAmountVal);
+
   const formattedDate = invoice_date
     ? new Date(invoice_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })
     : new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' });
@@ -62,68 +69,70 @@ export default function A4InvoiceTemplate({ invoice, shopSettings = {} }) {
         {customer_gstin && <div style={{ fontSize: 12, color: '#666', marginTop: 2 }}>GSTIN: {customer_gstin}</div>}
       </div>
 
-      {/* Items Table */}
+      {/* Items Table — Customer Facing (Gold Value & Wastage Excluded) */}
       <div className="invoice-table" style={{ marginBottom: 16 }}>
         <table>
           <thead>
             <tr>
-              <th>#</th>
-              <th>Description</th>
-              <th>Purity</th>
-              <th>Gross Wt.</th>
-              <th>Stone Wt.</th>
-              <th>Net Wt.</th>
-              <th>Gold Rate</th>
-              <th>Gold Value</th>
-              <th>Wastage</th>
-              <th>Making</th>
-              <th>Stone</th>
-              <th>Disc.</th>
-              <th>Item Total</th>
+              <th style={{ width: '4%' }}>#</th>
+              <th style={{ width: '26%' }}>Description</th>
+              <th style={{ width: '8%' }}>Purity</th>
+              <th style={{ width: '10%' }}>Gross Wt.</th>
+              <th style={{ width: '10%' }}>Stone Wt.</th>
+              <th style={{ width: '10%' }}>Net Wt.</th>
+              <th style={{ width: '12%' }}>Gold Rate</th>
+              <th style={{ width: '10%' }}>Making</th>
+              <th style={{ width: '10%' }}>Stone</th>
+              <th style={{ width: '12%', textAlign: 'right' }}>Item Amount</th>
             </tr>
           </thead>
           <tbody>
             {items.length === 0 ? (
-              <tr><td colSpan={13} style={{ textAlign: 'center', color: '#888', padding: 20 }}>No items</td></tr>
+              <tr><td colSpan={10} style={{ textAlign: 'center', color: '#888', padding: 20 }}>No items</td></tr>
             ) : items.map((item, i) => (
               <tr key={i}>
                 <td style={{ color: '#888' }}>{i + 1}</td>
-                <td style={{ fontWeight: 600, minWidth: 140 }}>{item.description}</td>
+                <td style={{ fontWeight: 600 }}>{item.description}</td>
                 <td>{item.purity}</td>
                 <td>{formatWeight(item.gross_weight)}</td>
                 <td>{formatWeight(item.stone_weight)}</td>
                 <td style={{ fontWeight: 600 }}>{formatWeight(item.net_weight)}</td>
                 <td>Rs. {item.gold_rate}/g</td>
-                <td>{formatCurrency(item.metal_value)}</td>
-                <td>{item.wastage_percent}%<br /><span style={{ fontSize: 11, color: '#888' }}>{formatCurrency(item.wastage_amount)}</span></td>
                 <td>{formatCurrency(item.making_charge)}</td>
                 <td>{formatCurrency(item.stone_charge)}</td>
-                <td>{item.discount ? `-${formatCurrency(item.discount)}` : '—'}</td>
-                <td style={{ fontWeight: 700 }}>{formatCurrency(item.item_total)}</td>
+                <td style={{ fontWeight: 700, textAlign: 'right' }}>{formatCurrency(item.item_total)}</td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
 
-      {/* Totals */}
+      {/* Totals Section with CGST & SGST Split */}
       <div className="invoice-totals">
         <table className="invoice-totals-table">
           <tbody>
             <tr><td className="label-col">Subtotal</td><td className="value-col">{formatCurrency(subtotal)}</td></tr>
             {discount > 0 && <tr><td className="label-col">Discount</td><td className="value-col" style={{ color: '#16a34a' }}>-{formatCurrency(discount)}</td></tr>}
             <tr style={{ borderTop: '1px solid #e5e7eb' }}>
-              <td className="label-col" style={{ paddingTop: 8 }}>Taxable Amount</td>
-              <td className="value-col" style={{ paddingTop: 8 }}>{formatCurrency(taxable)}</td>
+              <td className="label-col" style={{ paddingTop: 6, fontWeight: 600 }}>Before Tax</td>
+              <td className="value-col" style={{ paddingTop: 6, fontWeight: 600 }}>{formatCurrency(beforeTax)}</td>
             </tr>
             <tr>
-              <td className="label-col">GST @ {gst_rate}%</td>
-              <td className="value-col">{formatCurrency(gst_amount)}</td>
+              <td className="label-col">CGST @ {cgstRateVal.toFixed(2)}%</td>
+              <td className="value-col">{formatCurrency(cgstAmountVal)}</td>
+            </tr>
+            <tr>
+              <td className="label-col">SGST @ {sgstRateVal.toFixed(2)}%</td>
+              <td className="value-col">{formatCurrency(sgstAmountVal)}</td>
+            </tr>
+            <tr style={{ borderTop: '1px dashed #e5e7eb' }}>
+              <td className="label-col" style={{ paddingTop: 4, fontWeight: 600 }}>After Tax</td>
+              <td className="value-col" style={{ paddingTop: 4, fontWeight: 600 }}>{formatCurrency(afterTaxVal)}</td>
             </tr>
           </tbody>
           <tfoot>
             <tr className="invoice-grand-total">
-              <td>Grand Total</td>
+              <td>TOTAL</td>
               <td style={{ textAlign: 'right' }}>{formatCurrency(grand_total)}</td>
             </tr>
           </tfoot>

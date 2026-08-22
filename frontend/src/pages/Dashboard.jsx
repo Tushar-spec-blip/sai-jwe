@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { TrendingUp, Receipt, Users, Clock, Percent, Plus, UserPlus, Package, Eye, Printer, ChevronRight } from 'lucide-react';
 import { Badge } from '../components/common/Badge';
-import { mockDashboardStats, mockInvoices, mockMetalRates, mockPendingPayments } from '../data/mockData';
+import { mockDashboardStats, mockInvoices, mockPendingPayments } from '../data/mockData';
 import { formatCurrency } from '../utils/billingCalculator';
 import PrintPreviewModal from '../components/invoice/PrintPreviewModal';
+import { useMetalRates } from '../context/MetalRatesContext';
 
 const STAT_CONFIG = [
   {
@@ -30,6 +31,7 @@ const STAT_CONFIG = [
 
 export default function Dashboard({ onNavigate }) {
   const stats = mockDashboardStats;
+  const { rates } = useMetalRates();
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
@@ -181,7 +183,7 @@ export default function Dashboard({ onNavigate }) {
           </div>
           <div className="card-body">
             <div className="metal-rates-grid">
-              {mockMetalRates.map((rate) => (
+              {rates.map((rate) => (
                 <div key={rate.id} className="metal-rate-item">
                   <div>
                     <div className="metal-rate-label">{rate.purity} {rate.metal}</div>

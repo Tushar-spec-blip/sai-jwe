@@ -13,14 +13,14 @@ export default function BackupRestore() {
         </div>
       </div>
 
-      <div className="alert alert-warning" style={{ marginBottom: 24 }}>
-        <AlertCircle size={16} />
+      <div className="alert alert-warning" style={{ marginBottom: 24, display: 'flex', gap: 10, alignItems: 'center' }}>
+        <AlertCircle size={18} style={{ flexShrink: 0 }} />
         <div>
-          <strong>Recommendation:</strong> Create a backup at least once a week. Store backup files on a USB drive or external storage for safety.
+          <strong>Phase 1.7 Notice:</strong> Database backup & export functionality will be available after the local database (SQLite) is connected in Phase 2.
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 24 }}>
         {/* Backup */}
         <div className="card">
           <div className="card-header">
@@ -33,19 +33,23 @@ export default function BackupRestore() {
           </div>
           <div className="card-body">
             <div style={{ background: 'var(--cream)', padding: '14px 18px', borderRadius: 'var(--radius-md)', marginBottom: 16 }}>
-              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>Last Backup</div>
-              <div style={{ fontWeight: 600, fontSize: 14 }}>{lastBackup}</div>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>Last Backup Status</div>
+              <div style={{ fontWeight: 600, fontSize: 14 }}>Demo Mode (In-Memory Data)</div>
             </div>
             <div style={{ background: 'var(--cream)', padding: '14px 18px', borderRadius: 'var(--radius-md)', marginBottom: 20 }}>
-              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>Backup Location</div>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>Target Location</div>
               <div style={{ fontWeight: 600, fontSize: 13, fontFamily: 'monospace', color: 'var(--text-medium)' }}>{backupLocation}</div>
             </div>
-            <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: 12 }}
-              onClick={() => alert('Backup functionality will be implemented in Phase 2. The backup will save the SQLite database file to the selected location.')}>
-              <Download size={16} /> Create Backup Now
+            <button
+              className="btn btn-primary"
+              style={{ width: '100%', justifyContent: 'center', padding: 12, opacity: 0.7, cursor: 'not-allowed' }}
+              onClick={() => alert('Database backup will be available after the local database is connected.')}
+              title="Database backup will be available after the local database is connected."
+            >
+              <Download size={16} /> Create Backup (Available in Phase 2)
             </button>
             <p style={{ fontSize: 11, color: 'var(--text-muted)', textAlign: 'center', marginTop: 10 }}>
-              Creates a copy of your complete database including all customers, invoices, and settings.
+              Database backup will be available after the local database is connected.
             </p>
           </div>
         </div>
@@ -64,18 +68,22 @@ export default function BackupRestore() {
             <div className="alert alert-warning" style={{ marginBottom: 16 }}>
               <AlertCircle size={14} />
               <div style={{ fontSize: 12 }}>
-                <strong>Warning:</strong> Restoring will replace all current data with the backup data. This cannot be undone.
+                <strong>Note:</strong> Database restore will be active once SQLite is connected in Phase 2.
               </div>
             </div>
-            <div style={{ border: '2px dashed var(--border)', borderRadius: 'var(--radius-lg)', padding: '32px 20px', textAlign: 'center', marginBottom: 16, background: 'var(--cream)', cursor: 'pointer' }}
-              onClick={() => alert('File selection will open in Phase 2.')}>
+            <div style={{ border: '2px dashed var(--border)', borderRadius: 'var(--radius-lg)', padding: '32px 20px', textAlign: 'center', marginBottom: 16, background: 'var(--cream)', cursor: 'not-allowed', opacity: 0.7 }}
+              onClick={() => alert('Database restore will be available after the local database is connected.')}>
               <HardDrive size={32} color="var(--text-muted)" style={{ marginBottom: 8 }} />
               <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-medium)', marginBottom: 4 }}>Select Backup File</div>
-              <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Click to browse for a .db backup file</div>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Will browse for .db backup files in Phase 2</div>
             </div>
-            <button className="btn btn-secondary" style={{ width: '100%', justifyContent: 'center', padding: 12 }}
-              onClick={() => alert('Restore functionality will be implemented in Phase 2.')}>
-              <Upload size={16} /> Restore Selected Backup
+            <button
+              className="btn btn-secondary"
+              style={{ width: '100%', justifyContent: 'center', padding: 12, opacity: 0.7, cursor: 'not-allowed' }}
+              onClick={() => alert('Database restore will be available after the local database is connected.')}
+              title="Database restore will be available after the local database is connected."
+            >
+              <Upload size={16} /> Restore Selected Backup (Phase 2)
             </button>
           </div>
         </div>
