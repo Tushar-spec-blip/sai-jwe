@@ -69,49 +69,98 @@ export default function A4InvoiceTemplate({ invoice, shopSettings = {} }) {
         {customer_gstin && <div style={{ fontSize: 12, color: '#666', marginTop: 2 }}>GSTIN: {customer_gstin}</div>}
       </div>
 
-      {/* Items Table — Customer Facing (Gold Value & Wastage Excluded) */}
+      {/* Items Table — conditional on sale_type */}
       <div className="invoice-table" style={{ marginBottom: 16 }}>
-        <table>
-          <thead>
-            <tr>
-              <th style={{ width: '4%' }}>#</th>
-              <th style={{ width: '26%' }}>Description</th>
-              <th style={{ width: '8%' }}>Purity</th>
-              <th style={{ width: '10%' }}>Gross Wt.</th>
-              <th style={{ width: '10%' }}>Stone Wt.</th>
-              <th style={{ width: '10%' }}>Net Wt.</th>
-              <th style={{ width: '12%' }}>Gold Rate</th>
-              <th style={{ width: '10%' }}>Making</th>
-              <th style={{ width: '10%' }}>Stone</th>
-              <th style={{ width: '12%', textAlign: 'right' }}>Item Amount</th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.length === 0 ? (
-              <tr><td colSpan={10} style={{ textAlign: 'center', color: '#888', padding: 20 }}>No items</td></tr>
-            ) : items.map((item, i) => (
-              <tr key={i}>
-                <td style={{ color: '#888' }}>{i + 1}</td>
-                <td style={{ fontWeight: 600 }}>{item.description}</td>
-                <td>{item.purity}</td>
-                <td>{formatWeight(item.gross_weight)}</td>
-                <td>{formatWeight(item.stone_weight)}</td>
-                <td style={{ fontWeight: 600 }}>{formatWeight(item.net_weight)}</td>
-                <td>Rs. {item.gold_rate}/g</td>
-                <td>{formatCurrency(item.making_charge)}</td>
-                <td>{formatCurrency(item.stone_charge)}</td>
-                <td style={{ fontWeight: 700, textAlign: 'right' }}>{formatCurrency(item.item_total)}</td>
+        {invoice.sale_type === 'SILVER' ? (
+          /* ===== SILVER SALE TABLE ===== */
+          <table>
+            <thead>
+              <tr>
+                <th style={{ width: '4%' }}>#</th>
+                <th style={{ width: '28%' }}>Description</th>
+                <th style={{ width: '8%' }}>Purity</th>
+                <th style={{ width: '11%' }}>Gross Wt.</th>
+                <th style={{ width: '10%' }}>Stone Wt.</th>
+                <th style={{ width: '10%' }}>Net Wt.</th>
+                <th style={{ width: '13%' }}>Silver Rate</th>
+                <th style={{ width: '10%' }}>Stone</th>
+                <th style={{ width: '13%', textAlign: 'right' }}>Item Amount</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {items.length === 0 ? (
+                <tr><td colSpan={9} style={{ textAlign: 'center', color: '#888', padding: 20 }}>No items</td></tr>
+              ) : items.map((item, i) => (
+                <tr key={i}>
+                  <td style={{ color: '#888' }}>{i + 1}</td>
+                  <td style={{ fontWeight: 600 }}>{item.description}</td>
+                  <td>{item.purity}</td>
+                  <td>{formatWeight(item.gross_weight)}</td>
+                  <td>{formatWeight(item.stone_weight)}</td>
+                  <td style={{ fontWeight: 600 }}>{formatWeight(item.net_weight)}</td>
+                  <td>Rs. {item.gold_rate}/g</td>
+                  <td>{formatCurrency(item.stone_charge)}</td>
+                  <td style={{ fontWeight: 700, textAlign: 'right' }}>{formatCurrency(item.item_total)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          /* ===== GOLD SALE TABLE ===== */
+          <table>
+            <thead>
+              <tr>
+                <th style={{ width: '4%' }}>#</th>
+                <th style={{ width: '24%' }}>Description</th>
+                <th style={{ width: '8%' }}>Purity</th>
+                <th style={{ width: '10%' }}>Gross Wt.</th>
+                <th style={{ width: '9%' }}>Stone Wt.</th>
+                <th style={{ width: '9%' }}>Net Wt.</th>
+                <th style={{ width: '11%' }}>Gold Rate</th>
+                <th style={{ width: '8%' }}>VA</th>
+                <th style={{ width: '9%' }}>Making</th>
+                <th style={{ width: '7%' }}>Stone</th>
+                <th style={{ width: '11%', textAlign: 'right' }}>Item Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.length === 0 ? (
+                <tr><td colSpan={11} style={{ textAlign: 'center', color: '#888', padding: 20 }}>No items</td></tr>
+              ) : items.map((item, i) => {
+                const isWeightMode = item.wastage_mode === 'weight';
+                const vaDisplay = isWeightMode
+                  ? formatWeight(item.wastage_weight)
+                  : `${parseFloat(item.wastage_percent || 0)}%`;
+                return (
+                  <tr key={i}>
+                    <td style={{ color: '#888' }}>{i + 1}</td>
+                    <td style={{ fontWeight: 600 }}>{item.description}</td>
+                    <td>{item.purity}</td>
+                    <td>{formatWeight(item.gross_weight)}</td>
+                    <td>{formatWeight(item.stone_weight)}</td>
+                    <td style={{ fontWeight: 600 }}>{formatWeight(item.net_weight)}</td>
+                    <td>Rs. {item.gold_rate}/g</td>
+                    <td style={{ fontWeight: 600 }}>{vaDisplay}</td>
+                    <td>{formatCurrency(item.making_charge)}</td>
+                    <td>{formatCurrency(item.stone_charge)}</td>
+                    <td style={{ fontWeight: 700, textAlign: 'right' }}>{formatCurrency(item.item_total)}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
       </div>
 
       {/* Totals Section with CGST & SGST Split */}
       <div className="invoice-totals">
         <table className="invoice-totals-table">
           <tbody>
-            <tr><td className="label-col">Subtotal</td><td className="value-col">{formatCurrency(subtotal)}</td></tr>
+            {invoice.sale_type === 'SILVER' ? (
+              <tr><td className="label-col">Silver Value</td><td className="value-col">{formatCurrency(items.reduce((s, it) => s + (it.metal_value || 0), 0))}</td></tr>
+            ) : (
+              <tr><td className="label-col">Subtotal</td><td className="value-col">{formatCurrency(subtotal)}</td></tr>
+            )}
             {discount > 0 && <tr><td className="label-col">Discount</td><td className="value-col" style={{ color: '#16a34a' }}>-{formatCurrency(discount)}</td></tr>}
             <tr style={{ borderTop: '1px solid #e5e7eb' }}>
               <td className="label-col" style={{ paddingTop: 6, fontWeight: 600 }}>Before Tax</td>

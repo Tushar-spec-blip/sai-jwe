@@ -58,29 +58,47 @@ export default function Thermal80InvoiceTemplate({ invoice, shopSettings = {} })
 
       <hr className="thermal-divider" />
 
-      {/* Items — Customer Facing (Gold Value & Wastage Excluded) */}
-      {items.map((item, i) => (
-        <div key={i} style={{ marginBottom: 8 }}>
-          <div className="thermal-item-name">{item.description}</div>
-          <div className="thermal-row"><span>Purity:</span><span>{item.purity}</span></div>
-          <div className="thermal-row"><span>Gross Wt:</span><span>{formatWeight(item.gross_weight)}</span></div>
-          {item.stone_weight > 0 && <div className="thermal-row"><span>Stone Wt:</span><span>{formatWeight(item.stone_weight)}</span></div>}
-          <div className="thermal-row"><span>Net Wt:</span><span><strong>{formatWeight(item.net_weight)}</strong></span></div>
-          <div className="thermal-row"><span>Gold Rate:</span><span>Rs. {item.gold_rate}/g</span></div>
-          {item.making_charge > 0 && <div className="thermal-row"><span>Making:</span><span>{formatCurrency(item.making_charge)}</span></div>}
-          {item.stone_charge > 0 && <div className="thermal-row"><span>Stone:</span><span>{formatCurrency(item.stone_charge)}</span></div>}
-          {item.discount > 0 && <div className="thermal-row"><span>Discount:</span><span>-{formatCurrency(item.discount)}</span></div>}
-          <hr className="thermal-divider" style={{ borderStyle: 'dotted' }} />
-          <div className="thermal-row" style={{ fontWeight: 'bold' }}>
-            <span>Item Amount:</span><span>{formatCurrency(item.item_total)}</span>
+      {/* Items — conditional on sale_type */}
+      {items.map((item, i) => {
+        const isSilverItem = item.sale_type === 'SILVER' || invoice.sale_type === 'SILVER';
+        const isWeightMode = item.wastage_mode === 'weight';
+        const vaDisplay = isWeightMode
+          ? formatWeight(item.wastage_weight)
+          : `${parseFloat(item.wastage_percent || 0)}%`;
+
+        return (
+          <div key={i} style={{ marginBottom: 8 }}>
+            <div className="thermal-item-name">{item.description}</div>
+            <div className="thermal-row"><span>Purity:</span><span>{item.purity}</span></div>
+            <div className="thermal-row"><span>Gross Wt:</span><span>{formatWeight(item.gross_weight)}</span></div>
+            {item.stone_weight > 0 && <div className="thermal-row"><span>Stone Wt:</span><span>{formatWeight(item.stone_weight)}</span></div>}
+            <div className="thermal-row"><span>Net Wt:</span><span><strong>{formatWeight(item.net_weight)}</strong></span></div>
+            {isSilverItem ? (
+              <div className="thermal-row"><span>Silver Rate:</span><span>Rs. {item.gold_rate}/g</span></div>
+            ) : (
+              <>
+                <div className="thermal-row"><span>Gold Rate:</span><span>Rs. {item.gold_rate}/g</span></div>
+                <div className="thermal-row"><span>VA:</span><span>{vaDisplay}</span></div>
+                {item.making_charge > 0 && <div className="thermal-row"><span>Making:</span><span>{formatCurrency(item.making_charge)}</span></div>}
+              </>
+            )}
+            {item.stone_charge > 0 && <div className="thermal-row"><span>Stone:</span><span>{formatCurrency(item.stone_charge)}</span></div>}
+            {item.discount > 0 && <div className="thermal-row"><span>Discount:</span><span>-{formatCurrency(item.discount)}</span></div>}
+            <hr className="thermal-divider" style={{ borderStyle: 'dotted' }} />
+            <div className="thermal-row" style={{ fontWeight: 'bold' }}>
+              <span>Item Amount:</span><span>{formatCurrency(item.item_total)}</span>
+            </div>
+            {i < items.length - 1 && <hr className="thermal-divider" />}
           </div>
-          {i < items.length - 1 && <hr className="thermal-divider" />}
-        </div>
-      ))}
+        );
+      })}
 
       <hr className="thermal-divider" />
 
       {/* Totals Section */}
+      {invoice.sale_type === 'SILVER' && (
+        <div className="thermal-row"><span>Silver Value:</span><span>{formatCurrency(items.reduce((s, it) => s + (it.metal_value || 0), 0))}</span></div>
+      )}
       <div className="thermal-row"><span>Before Tax:</span><span><strong>{formatCurrency(beforeTax)}</strong></span></div>
       <div className="thermal-row"><span>CGST @ {cgstRateVal.toFixed(2)}%:</span><span>{formatCurrency(cgstAmountVal)}</span></div>
       <div className="thermal-row"><span>SGST @ {sgstRateVal.toFixed(2)}%:</span><span>{formatCurrency(sgstAmountVal)}</span></div>

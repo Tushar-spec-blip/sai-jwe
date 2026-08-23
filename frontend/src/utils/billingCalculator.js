@@ -5,11 +5,11 @@
 /**
  * Calculate a single bill item's values.
  *
- * Formula (Phase 1.7):
+ * Formula (Phase 1.7+):
  *   Net Weight = Gross Weight - Stone Weight
- *   Gold Value (Internal Only) = Net Weight × Gold Rate
+ *   Metal Value (Internal Only) = Net Weight × Metal Rate
  *
- *   Wastage Calculation:
+ *   GOLD SALE — Wastage Calculation:
  *     - If wastage_mode === 'percentage':
  *         Wastage Weight (g) = Net Weight × (Wastage % / 100)
  *         Wastage Amount (Rs.) = Wastage Weight × Gold Rate
@@ -17,34 +17,42 @@
  *         Wastage Weight (g) = User entered wastage weight
  *         Wastage % = (Wastage Weight / Net Weight) × 100 (for internal display)
  *         Wastage Amount (Rs.) = Wastage Weight × Gold Rate
+ *   Gold Item Total = Gold Value + Wastage Amount + Making Charge + Stone Charge - Discount
  *
- *   Item Total = Gold Value + Wastage Amount + Making Charge + Stone Charge - Discount
+ *   SILVER SALE — No Wastage, No Making Charge:
+ *   Silver Item Total = Silver Value + Stone Charge - Discount
  */
 export function calculateItem(item) {
   const grossWeight = parseFloat(item.gross_weight) || 0;
   const stoneWeight = parseFloat(item.stone_weight) || 0;
   const goldRate = parseFloat(item.gold_rate) || 0;
+  const isSilver = item.sale_type === 'SILVER';
   const wastageMode = item.wastage_mode || 'percentage'; // 'percentage' | 'weight'
 
-  const makingCharge = parseFloat(item.making_charge) || 0;
+  // Silver Sale: making charge is excluded
+  const makingCharge = isSilver ? 0 : (parseFloat(item.making_charge) || 0);
   const stoneCharge = parseFloat(item.stone_charge) || 0;
   const discount = parseFloat(item.discount) || 0;
 
   const netWeight = Math.max(0, grossWeight - stoneWeight);
-  const metalValue = netWeight * goldRate; // Gold Value (internal)
+  const metalValue = netWeight * goldRate; // Silver Value or Gold Value (internal)
 
+  // Silver Sale: no wastage at all
   let wastagePercent = 0;
   let wastageWeight = 0;
+  let wastageAmount = 0;
 
-  if (wastageMode === 'weight') {
-    wastageWeight = parseFloat(item.wastage_weight) || 0;
-    wastagePercent = netWeight > 0 ? (wastageWeight / netWeight) * 100 : 0;
-  } else {
-    wastagePercent = parseFloat(item.wastage_percent) || 0;
-    wastageWeight = netWeight * (wastagePercent / 100);
+  if (!isSilver) {
+    if (wastageMode === 'weight') {
+      wastageWeight = parseFloat(item.wastage_weight) || 0;
+      wastagePercent = netWeight > 0 ? (wastageWeight / netWeight) * 100 : 0;
+    } else {
+      wastagePercent = parseFloat(item.wastage_percent) || 0;
+      wastageWeight = netWeight * (wastagePercent / 100);
+    }
+    wastageAmount = wastageWeight * goldRate;
   }
 
-  const wastageAmount = wastageWeight * goldRate;
   const itemTotal = metalValue + wastageAmount + makingCharge + stoneCharge - discount;
 
   return {
@@ -56,6 +64,7 @@ export function calculateItem(item) {
     wastage_percent: wastagePercent,
     wastage_weight: wastageWeight,
     wastage_amount: wastageAmount,
+    making_charge: makingCharge,
     item_total: Math.max(0, itemTotal),
   };
 }

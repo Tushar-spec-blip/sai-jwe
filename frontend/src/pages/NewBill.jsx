@@ -56,6 +56,7 @@ export default function NewBill({ onNavigate }) {
   const [notes, setNotes] = useState('');
   const [savedInvoice, setSavedInvoice] = useState(null);
   const [showPreview, setShowPreview] = useState(false);
+  const [previewFormat, setPreviewFormat] = useState('A4');
 
   // Sync GST rate if settings change
   useEffect(() => {
@@ -92,13 +93,14 @@ export default function NewBill({ onNavigate }) {
   const calc = calculateInvoice(
     saleType ? items.map(item => ({
       ...item,
+      sale_type: saleType,
       gross_weight: parseFloat(item.gross_weight) || 0,
       stone_weight: parseFloat(item.stone_weight) || 0,
       gold_rate: parseFloat(item.gold_rate) || 0,
       wastage_mode: item.wastage_mode || 'percentage',
       wastage_percent: parseFloat(item.wastage_percent) || 0,
       wastage_weight: parseFloat(item.wastage_weight) || 0,
-      making_charge: parseFloat(item.making_charge) || 0,
+      making_charge: saleType === 'SILVER' ? 0 : (parseFloat(item.making_charge) || 0),
       stone_charge: parseFloat(item.stone_charge) || 0,
       discount: parseFloat(item.discount) || 0,
     })) : [],
@@ -186,6 +188,7 @@ export default function NewBill({ onNavigate }) {
 
     const invoiceItems = calc.items.map(it => ({
       ...it,
+      sale_type: saleType,
       gross_weight: parseFloat(it.gross_weight) || 0,
       stone_weight: parseFloat(it.stone_weight) || 0,
       net_weight: it.net_weight,
@@ -196,7 +199,7 @@ export default function NewBill({ onNavigate }) {
       wastage_percent: it.wastage_percent,
       wastage_weight: it.wastage_weight,
       wastage_amount: it.wastage_amount,
-      making_charge: parseFloat(it.making_charge) || 0,
+      making_charge: it.making_charge,
       stone_charge: parseFloat(it.stone_charge) || 0,
       discount: parseFloat(it.discount) || 0,
       item_total: it.item_total,
@@ -519,15 +522,17 @@ export default function NewBill({ onNavigate }) {
             </div>
             <div className="billing-section-body">
               {items.map((item, idx) => {
+                const isSilverSale = saleType === 'SILVER';
                 const calcItem = calculateItem({
                   ...item,
+                  sale_type: saleType,
                   gross_weight: parseFloat(item.gross_weight) || 0,
                   stone_weight: parseFloat(item.stone_weight) || 0,
                   gold_rate: parseFloat(item.gold_rate) || 0,
                   wastage_mode: item.wastage_mode || 'percentage',
                   wastage_percent: parseFloat(item.wastage_percent) || 0,
                   wastage_weight: parseFloat(item.wastage_weight) || 0,
-                  making_charge: parseFloat(item.making_charge) || 0,
+                  making_charge: isSilverSale ? 0 : (parseFloat(item.making_charge) || 0),
                   stone_charge: parseFloat(item.stone_charge) || 0,
                   discount: parseFloat(item.discount) || 0,
                 });
@@ -589,69 +594,78 @@ export default function NewBill({ onNavigate }) {
                       </div>
                       <div className="form-group">
                         <label className="form-label">Net Weight (g)</label>
-                        <input className="form-input" value={calcItem.net_weight.toFixed(3)} disabled style={{ color: 'var(--gold-dark)', fontWeight: 700 }} />
+                        <input className="form-input" value={calcItem.net_weight.toFixed(3)} disabled style={{ color: isSilverSale ? '#334155' : 'var(--gold-dark)', fontWeight: 700 }} />
                       </div>
                       <div className="form-group">
-                        <label className="form-label">Gold Rate (Rs./g)</label>
+                        <label className="form-label">{isSilverSale ? 'Silver Rate (Rs./g)' : 'Gold Rate (Rs./g)'}</label>
                         <input className="form-input" type="number" inputMode="numeric" step="1" value={item.gold_rate} onChange={e => setItem(item._id, 'gold_rate', e.target.value)} />
                       </div>
 
-                      {/* Segmented Wastage Type Control */}
-                      <div className="form-group" style={{ gridColumn: 'span 2' }}>
-                        <label className="form-label">Wastage Type</label>
-                        <div style={{ display: 'flex', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', overflow: 'hidden', height: 38 }}>
-                          <button
-                            type="button"
-                            style={{
-                              flex: 1,
-                              border: 'none',
-                              background: !isWeightMode ? 'var(--gold-dark)' : '#f3f4f6',
-                              color: !isWeightMode ? 'white' : 'var(--text-dark)',
-                              fontWeight: !isWeightMode ? 600 : 500,
-                              fontSize: 12,
-                              cursor: 'pointer',
-                              transition: 'all 0.15s ease'
-                            }}
-                            onClick={() => setItem(item._id, 'wastage_mode', 'percentage')}
-                          >
-                            Percentage (%)
-                          </button>
-                          <button
-                            type="button"
-                            style={{
-                              flex: 1,
-                              border: 'none',
-                              borderLeft: '1px solid var(--border)',
-                              background: isWeightMode ? 'var(--gold-dark)' : '#f3f4f6',
-                              color: isWeightMode ? 'white' : 'var(--text-dark)',
-                              fontWeight: isWeightMode ? 600 : 500,
-                              fontSize: 12,
-                              cursor: 'pointer',
-                              transition: 'all 0.15s ease'
-                            }}
-                            onClick={() => setItem(item._id, 'wastage_mode', 'weight')}
-                          >
-                            Weight (g)
-                          </button>
-                        </div>
-                      </div>
-
-                      {isWeightMode ? (
-                        <div className="form-group">
-                          <label className="form-label">Wastage (g)</label>
-                          <input className="form-input" type="number" inputMode="decimal" step="0.001" value={item.wastage_weight} onChange={e => setItem(item._id, 'wastage_weight', e.target.value)} placeholder="0.000" />
-                        </div>
-                      ) : (
-                        <div className="form-group">
-                          <label className="form-label">Wastage (%)</label>
-                          <input className="form-input" type="number" inputMode="decimal" step="0.1" value={item.wastage_percent} onChange={e => setItem(item._id, 'wastage_percent', e.target.value)} placeholder="0.0" />
+                      {/* Wastage Type — Gold Sale only */}
+                      {!isSilverSale && (
+                        <div className="form-group" style={{ gridColumn: 'span 2' }}>
+                          <label className="form-label">Wastage Type</label>
+                          <div style={{ display: 'flex', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', overflow: 'hidden', height: 38 }}>
+                            <button
+                              type="button"
+                              style={{
+                                flex: 1,
+                                border: 'none',
+                                background: !isWeightMode ? 'var(--gold-dark)' : '#f3f4f6',
+                                color: !isWeightMode ? 'white' : 'var(--text-dark)',
+                                fontWeight: !isWeightMode ? 600 : 500,
+                                fontSize: 12,
+                                cursor: 'pointer',
+                                transition: 'all 0.15s ease'
+                              }}
+                              onClick={() => setItem(item._id, 'wastage_mode', 'percentage')}
+                            >
+                              Percentage (%)
+                            </button>
+                            <button
+                              type="button"
+                              style={{
+                                flex: 1,
+                                border: 'none',
+                                borderLeft: '1px solid var(--border)',
+                                background: isWeightMode ? 'var(--gold-dark)' : '#f3f4f6',
+                                color: isWeightMode ? 'white' : 'var(--text-dark)',
+                                fontWeight: isWeightMode ? 600 : 500,
+                                fontSize: 12,
+                                cursor: 'pointer',
+                                transition: 'all 0.15s ease'
+                              }}
+                              onClick={() => setItem(item._id, 'wastage_mode', 'weight')}
+                            >
+                              Weight (g)
+                            </button>
+                          </div>
                         </div>
                       )}
 
-                      <div className="form-group">
-                        <label className="form-label">Making Charge (Rs.)</label>
-                        <input className="form-input" type="number" inputMode="numeric" step="1" value={item.making_charge} onChange={e => setItem(item._id, 'making_charge', e.target.value)} placeholder="0" />
-                      </div>
+                      {/* Wastage input — Gold Sale only */}
+                      {!isSilverSale && (
+                        isWeightMode ? (
+                          <div className="form-group">
+                            <label className="form-label">Wastage (g)</label>
+                            <input className="form-input" type="number" inputMode="decimal" step="0.001" value={item.wastage_weight} onChange={e => setItem(item._id, 'wastage_weight', e.target.value)} placeholder="0.000" />
+                          </div>
+                        ) : (
+                          <div className="form-group">
+                            <label className="form-label">Wastage (%)</label>
+                            <input className="form-input" type="number" inputMode="decimal" step="0.1" value={item.wastage_percent} onChange={e => setItem(item._id, 'wastage_percent', e.target.value)} placeholder="0.0" />
+                          </div>
+                        )
+                      )}
+
+                      {/* Making Charge — Gold Sale only */}
+                      {!isSilverSale && (
+                        <div className="form-group">
+                          <label className="form-label">Making Charge (Rs.)</label>
+                          <input className="form-input" type="number" inputMode="numeric" step="1" value={item.making_charge} onChange={e => setItem(item._id, 'making_charge', e.target.value)} placeholder="0" />
+                        </div>
+                      )}
+
                       <div className="form-group">
                         <label className="form-label">Stone Charge (Rs.)</label>
                         <input className="form-input" type="number" inputMode="numeric" step="1" value={item.stone_charge} onChange={e => setItem(item._id, 'stone_charge', e.target.value)} placeholder="0" />
@@ -664,14 +678,20 @@ export default function NewBill({ onNavigate }) {
 
                     {/* Live calculation preview (Internal Shopkeeper Verification Only) */}
                     <div className="bill-item-calculation">
-                      <div className="calc-row"><span className="label">{saleType === 'SILVER' ? 'Silver Value' : 'Gold Value'} (Internal Only)</span><span className="value">{formatCurrency(calcItem.metal_value)}</span></div>
-                      <div className="calc-row">
-                        <span className="label">
-                          Wastage ({isWeightMode ? `${calcItem.wastage_weight.toFixed(3)} g` : `${calcItem.wastage_percent}%`}) — {isWeightMode ? `${calcItem.wastage_percent.toFixed(2)}%` : `${calcItem.wastage_weight.toFixed(3)} g`}
-                        </span>
-                        <span className="value">+ {formatCurrency(calcItem.wastage_amount)}</span>
-                      </div>
-                      <div className="calc-row"><span className="label">Making Charge</span><span className="value">+ {formatCurrency(calcItem.making_charge)}</span></div>
+                      <div className="calc-row"><span className="label">{isSilverSale ? 'Silver Value' : 'Gold Value'}</span><span className="value">{formatCurrency(calcItem.metal_value)}</span></div>
+                      {/* Wastage rows — Gold Sale only */}
+                      {!isSilverSale && (
+                        <div className="calc-row">
+                          <span className="label">
+                            VA ({isWeightMode ? `${calcItem.wastage_weight.toFixed(3)} g` : `${calcItem.wastage_percent}%`}) — {isWeightMode ? `${calcItem.wastage_percent.toFixed(2)}%` : `${calcItem.wastage_weight.toFixed(3)} g`}
+                          </span>
+                          <span className="value">+ {formatCurrency(calcItem.wastage_amount)}</span>
+                        </div>
+                      )}
+                      {/* Making Charge — Gold Sale only */}
+                      {!isSilverSale && (
+                        <div className="calc-row"><span className="label">Making Charge</span><span className="value">+ {formatCurrency(calcItem.making_charge)}</span></div>
+                      )}
                       {calcItem.stone_charge > 0 && <div className="calc-row"><span className="label">Stone Charge</span><span className="value">+ {formatCurrency(calcItem.stone_charge)}</span></div>}
                       {calcItem.discount > 0 && <div className="calc-row"><span className="label">Discount</span><span className="value" style={{ color: '#16a34a' }}>- {formatCurrency(calcItem.discount)}</span></div>}
                       <div className="calc-row calc-total"><span className="label" style={{ color: 'inherit' }}>Item Total</span><span className="value">{formatCurrency(calcItem.item_total)}</span></div>
@@ -772,10 +792,26 @@ export default function NewBill({ onNavigate }) {
                 <span className="s-label">Items</span>
                 <span className="s-value">{items.length}</span>
               </div>
-              <div className="summary-line">
-                <span className="s-label">Subtotal</span>
-                <span className="s-value">{formatCurrency(calc.subtotal)}</span>
-              </div>
+              {/* Silver Sale: show silver value; Gold Sale: show subtotal */}
+              {saleType === 'SILVER' ? (
+                <>
+                  <div className="summary-line">
+                    <span className="s-label">Silver Value</span>
+                    <span className="s-value">{formatCurrency(calc.items.reduce((s, it) => s + it.metal_value, 0))}</span>
+                  </div>
+                  {calc.items.reduce((s, it) => s + (it.stone_charge || 0), 0) > 0 && (
+                    <div className="summary-line">
+                      <span className="s-label">Stone Charge</span>
+                      <span className="s-value">{formatCurrency(calc.items.reduce((s, it) => s + (it.stone_charge || 0), 0))}</span>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="summary-line">
+                  <span className="s-label">Subtotal</span>
+                  <span className="s-value">{formatCurrency(calc.subtotal)}</span>
+                </div>
+              )}
               {calc.globalDiscount > 0 && (
                 <div className="summary-line">
                   <span className="s-label">Discount</span>
@@ -834,10 +870,10 @@ export default function NewBill({ onNavigate }) {
                     <CheckCircle size={16} /> Bill saved successfully!
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    <button className="btn btn-primary w-full" onClick={() => setShowPreview(true)} style={{ width: '100%', justifyContent: 'center' }}>
+                    <button className="btn btn-primary w-full" onClick={() => { setPreviewFormat('A4'); setShowPreview(true); }} style={{ width: '100%', justifyContent: 'center' }}>
                       📄 Print A4 Invoice
                     </button>
-                    <button className="btn btn-secondary w-full" onClick={() => setShowPreview(true)} style={{ width: '100%', justifyContent: 'center' }}>
+                    <button className="btn btn-secondary w-full" onClick={() => { setPreviewFormat('80mm'); setShowPreview(true); }} style={{ width: '100%', justifyContent: 'center' }}>
                       🧾 Print 80mm Receipt
                     </button>
                     <button className="btn btn-ghost w-full" onClick={handleNewBill} style={{ width: '100%', justifyContent: 'center' }}>
@@ -862,7 +898,7 @@ export default function NewBill({ onNavigate }) {
           <div className="mss-value">{formatCurrency(calc.grandTotal)}</div>
         </div>
         {savedInvoice ? (
-          <button className="btn btn-primary btn-sm" onClick={() => setShowPreview(true)}>
+          <button className="btn btn-primary btn-sm" onClick={() => { setPreviewFormat('A4'); setShowPreview(true); }}>
             📄 View Invoice
           </button>
         ) : (
@@ -877,6 +913,7 @@ export default function NewBill({ onNavigate }) {
         <PrintPreviewModal
           invoice={savedInvoice}
           isOpen={showPreview}
+          initialFormat={previewFormat}
           onClose={() => setShowPreview(false)}
         />
       )}

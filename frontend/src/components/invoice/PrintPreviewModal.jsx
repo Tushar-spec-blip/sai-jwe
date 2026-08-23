@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { X, Printer, Share2, Check } from 'lucide-react';
 import A4InvoiceTemplate from './A4InvoiceTemplate';
 import Thermal80InvoiceTemplate from './Thermal80InvoiceTemplate';
@@ -9,11 +9,17 @@ import { useSettings } from '../../context/SettingsContext';
  * Shows A4 or 80mm thermal preview and triggers window.print().
  * Does NOT save PDF files.
  */
-export default function PrintPreviewModal({ invoice, isOpen, onClose }) {
+export default function PrintPreviewModal({ invoice, isOpen, onClose, initialFormat }) {
   const { settings } = useSettings();
-  const [format, setFormat] = useState(settings.default_invoice_format || 'A4');
+  const [format, setFormat] = useState(initialFormat || settings.default_invoice_format || 'A4');
   const [copied, setCopied] = useState(false);
   const printRef = useRef(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      setFormat(initialFormat || settings.default_invoice_format || 'A4');
+    }
+  }, [isOpen, initialFormat, settings.default_invoice_format]);
 
   if (!isOpen || !invoice) return null;
 

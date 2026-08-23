@@ -13,6 +13,12 @@ export default function Bills({ onNavigate }) {
   const [filterFrom, setFilterFrom] = useState('');
   const [filterTo, setFilterTo] = useState('');
   const [previewInvoice, setPreviewInvoice] = useState(null);
+  const [previewFormat, setPreviewFormat] = useState('A4');
+
+  const openPreview = (inv, format = 'A4') => {
+    setPreviewFormat(format);
+    setPreviewInvoice(inv);
+  };
 
   const filtered = mockInvoices.filter(inv => {
     const matchSearch = !search ||
@@ -95,13 +101,13 @@ export default function Bills({ onNavigate }) {
                   <td><Badge status={inv.payment_status} /></td>
                   <td>
                     <div className="td-actions">
-                      <button className="btn btn-ghost btn-sm" title="View Invoice" onClick={() => setPreviewInvoice(inv)}>
+                      <button className="btn btn-ghost btn-sm" title="View Invoice" onClick={() => openPreview(inv, 'A4')}>
                         <Eye size={14} />
                       </button>
-                      <button className="btn btn-secondary btn-sm" title="Print A4" onClick={() => setPreviewInvoice(inv)}>
+                      <button className="btn btn-secondary btn-sm" title="Print A4" onClick={() => openPreview(inv, 'A4')}>
                         <Printer size={14} /> A4
                       </button>
-                      <button className="btn btn-secondary btn-sm" title="Print 80mm" onClick={() => setPreviewInvoice(inv)}>
+                      <button className="btn btn-secondary btn-sm" title="Print 80mm" onClick={() => openPreview(inv, '80mm')}>
                         🧾
                       </button>
                     </div>
@@ -114,7 +120,12 @@ export default function Bills({ onNavigate }) {
       </div>
 
       {previewInvoice && (
-        <PrintPreviewModal invoice={previewInvoice} isOpen={!!previewInvoice} onClose={() => setPreviewInvoice(null)} />
+        <PrintPreviewModal
+          invoice={previewInvoice}
+          isOpen={!!previewInvoice}
+          initialFormat={previewFormat}
+          onClose={() => setPreviewInvoice(null)}
+        />
       )}
     </div>
   );
