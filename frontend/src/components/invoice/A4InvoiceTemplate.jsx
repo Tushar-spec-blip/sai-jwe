@@ -178,11 +178,17 @@ export default function A4InvoiceTemplate({ invoice, shopSettings = {} }) {
               <td className="label-col" style={{ paddingTop: 4, fontWeight: 600 }}>After Tax</td>
               <td className="value-col" style={{ paddingTop: 4, fontWeight: 600 }}>{formatCurrency(afterTaxVal)}</td>
             </tr>
+            {invoice.deduction > 0 && (
+              <tr style={{ borderTop: '1px solid #e5e7eb' }}>
+                <td className="label-col" style={{ color: '#dc2626', paddingTop: 6 }}>Deduction</td>
+                <td className="value-col" style={{ color: '#dc2626', paddingTop: 6 }}>-{formatCurrency(invoice.deduction)}</td>
+              </tr>
+            )}
           </tbody>
           <tfoot>
             <tr className="invoice-grand-total">
               <td>TOTAL</td>
-              <td style={{ textAlign: 'right' }}>{formatCurrency(grand_total)}</td>
+              <td style={{ textAlign: 'right' }}>{formatCurrency(invoice.deduction > 0 ? invoice.final_payable : grand_total)}</td>
             </tr>
           </tfoot>
         </table>
@@ -190,7 +196,7 @@ export default function A4InvoiceTemplate({ invoice, shopSettings = {} }) {
 
       {/* Amount in Words */}
       <div className="invoice-amount-words">
-        <strong>Amount in Words: </strong>{numberToWords(grand_total)}
+        <strong>Amount in Words: </strong>{numberToWords(invoice.deduction > 0 ? invoice.final_payable : grand_total)}
       </div>
 
       {/* Payment Details */}

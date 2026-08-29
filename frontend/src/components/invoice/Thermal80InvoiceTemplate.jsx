@@ -103,10 +103,13 @@ export default function Thermal80InvoiceTemplate({ invoice, shopSettings = {} })
       <div className="thermal-row"><span>CGST @ {cgstRateVal.toFixed(2)}%:</span><span>{formatCurrency(cgstAmountVal)}</span></div>
       <div className="thermal-row"><span>SGST @ {sgstRateVal.toFixed(2)}%:</span><span>{formatCurrency(sgstAmountVal)}</span></div>
       <div className="thermal-row"><span>After Tax:</span><span><strong>{formatCurrency(afterTaxVal)}</strong></span></div>
+      {invoice.deduction > 0 && (
+        <div className="thermal-row" style={{ color: '#dc2626' }}><span>Deduction:</span><span>-{formatCurrency(invoice.deduction)}</span></div>
+      )}
 
       <hr className="thermal-divider" />
 
-      <div className="thermal-total">TOTAL: {formatCurrency(grand_total)}</div>
+      <div className="thermal-total">TOTAL: {formatCurrency(invoice.deduction > 0 ? invoice.final_payable : grand_total)}</div>
 
       <hr className="thermal-divider" />
 

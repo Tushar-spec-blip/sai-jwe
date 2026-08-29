@@ -90,8 +90,8 @@ export default function Thermal80PurchaseReceiptTemplate({ purchase, shopSetting
 
       {/* Totals */}
       <div className="thermal-row"><span>Purchase Amount:</span><span><strong>{formatCurrency(purchase_amount)}</strong></span></div>
-      {deduction_notes && (
-        <div className="thermal-row"><span>Deduction:</span><span>—</span></div>
+      {purchase.deduction > 0 && (
+        <div className="thermal-row" style={{ color: '#dc2626' }}><span>Deduction:</span><span>-{formatCurrency(purchase.deduction)}</span></div>
       )}
 
       <hr className="thermal-divider" />
