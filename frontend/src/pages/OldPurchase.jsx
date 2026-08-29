@@ -13,7 +13,7 @@ import PurchasePrintPreviewModal from '../components/invoice/PurchasePrintPrevie
 // These are SEPARATE from GOLD_SALE and SILVER_SALE.
 // ============================================================
 
-const PAYMENT_METHODS = ['Cash', 'UPI', 'Card', 'Bank Transfer', 'Deduction'];
+const PAYMENT_METHODS = ['Cash', 'UPI', 'Card', 'Bank Transfer', 'Deducted to bill'];
 
 const GOLD_PURITIES = ['24K', '22K', '18K', '14K', 'Other'];
 const SILVER_PURITIES = ['999', 'Other'];

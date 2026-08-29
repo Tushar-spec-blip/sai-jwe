@@ -7,7 +7,7 @@ import PrintPreviewModal from '../components/invoice/PrintPreviewModal';
 import { useSettings } from '../context/SettingsContext';
 import { useMetalRates } from '../context/MetalRatesContext';
 
-const PAYMENT_METHODS = ['Cash', 'UPI', 'Card', 'Bank Transfer', 'Deduction'];
+const PAYMENT_METHODS = ['Cash', 'UPI', 'Card', 'Bank Transfer', 'Deducted to bill'];
 
 export default function NewBill({ onNavigate, initialSaleType }) {
   const { settings } = useSettings();
