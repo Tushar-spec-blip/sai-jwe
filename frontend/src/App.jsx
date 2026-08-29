@@ -7,6 +7,7 @@ import Customers from './pages/Customers';
 import Inventory from './pages/Inventory';
 import NewBill from './pages/NewBill';
 import Bills from './pages/Bills';
+import OldPurchase from './pages/OldPurchase';
 import Payments from './pages/Payments';
 import Reports from './pages/Reports';
 import MetalRates from './pages/MetalRates';
@@ -19,6 +20,7 @@ const ROUTES = {
   '/inventory': Inventory,
   '/new-bill': NewBill,
   '/bills': Bills,
+  '/old-purchase': OldPurchase,
   '/payments': Payments,
   '/reports': Reports,
   '/metal-rates': MetalRates,
@@ -44,7 +46,16 @@ export default function App() {
     setIsMobileMenuOpen(false);
   };
 
-  const PageComponent = ROUTES[currentPath] || Dashboard;
+  const renderPage = () => {
+    if (currentPath === '/gold-sale') {
+      return <NewBill key="gold-sale" onNavigate={navigate} initialSaleType="GOLD" />;
+    }
+    if (currentPath === '/silver-sale') {
+      return <NewBill key="silver-sale" onNavigate={navigate} initialSaleType="SILVER" />;
+    }
+    const PageComponent = ROUTES[currentPath] || Dashboard;
+    return <PageComponent onNavigate={navigate} />;
+  };
 
   return (
     <div className="app-layout">
@@ -71,7 +82,7 @@ export default function App() {
           onToggleMobileMenu={toggleMobileMenu}
         />
         <main className="page-content">
-          <PageComponent onNavigate={navigate} />
+          {renderPage()}
         </main>
       </div>
     </div>

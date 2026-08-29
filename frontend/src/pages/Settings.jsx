@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Save, CheckCircle } from 'lucide-react';
+import { Save, CheckCircle, RotateCcw } from 'lucide-react';
 import { useSettings } from '../context/SettingsContext';
+import storageService from '../services/storageService';
 
 const TABS = ['Shop Details', 'Billing', 'GST', 'Printing'];
 
@@ -21,6 +22,13 @@ export default function Settings() {
 
   const handleDiscard = () => {
     setDraft({ ...settings });
+  };
+
+  const handleResetDemoData = () => {
+    if (window.confirm("Reset all demo data? This will remove changes made in this browser.")) {
+      storageService.resetDemoData();
+      window.location.reload();
+    }
   };
 
   const isDirty = JSON.stringify(draft) !== JSON.stringify(settings);
@@ -246,6 +254,24 @@ export default function Settings() {
               </div>
             </div>
           )}
+
+          {/* Reset Demo Data Section */}
+          <div style={{ marginTop: 36, paddingTop: 20, borderTop: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 14 }}>
+            <div>
+              <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--text-dark)' }}>Reset Demo Data</div>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                Reset customers, invoices, old purchases, and metal rates back to initial mock data.
+              </div>
+            </div>
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              style={{ color: '#dc2626', borderColor: '#fca5a5' }}
+              onClick={handleResetDemoData}
+            >
+              <RotateCcw size={13} /> Reset Demo Data
+            </button>
+          </div>
 
         </div>
       </div>

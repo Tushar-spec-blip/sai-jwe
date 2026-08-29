@@ -16,7 +16,7 @@ export default function BackupRestore() {
       <div className="alert alert-warning" style={{ marginBottom: 24, display: 'flex', gap: 10, alignItems: 'center' }}>
         <AlertCircle size={18} style={{ flexShrink: 0 }} />
         <div>
-          <strong>Phase 1.7 Notice:</strong> Database backup & export functionality will be available after the local database (SQLite) is connected in Phase 2.
+          <strong>Phase 1 Notice:</strong> Backup will be available after the local database is implemented.
         </div>
       </div>
 
@@ -34,7 +34,7 @@ export default function BackupRestore() {
           <div className="card-body">
             <div style={{ background: 'var(--cream)', padding: '14px 18px', borderRadius: 'var(--radius-md)', marginBottom: 16 }}>
               <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>Last Backup Status</div>
-              <div style={{ fontWeight: 600, fontSize: 14 }}>Demo Mode (In-Memory Data)</div>
+              <div style={{ fontWeight: 600, fontSize: 14 }}>Demo Mode (Local Persistence)</div>
             </div>
             <div style={{ background: 'var(--cream)', padding: '14px 18px', borderRadius: 'var(--radius-md)', marginBottom: 20 }}>
               <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>Target Location</div>
@@ -43,13 +43,13 @@ export default function BackupRestore() {
             <button
               className="btn btn-primary"
               style={{ width: '100%', justifyContent: 'center', padding: 12, opacity: 0.7, cursor: 'not-allowed' }}
-              onClick={() => alert('Database backup will be available after the local database is connected.')}
-              title="Database backup will be available after the local database is connected."
+              onClick={() => alert('Backup will be available after the local database is implemented.')}
+              title="Backup will be available after the local database is implemented."
             >
               <Download size={16} /> Create Backup (Available in Phase 2)
             </button>
             <p style={{ fontSize: 11, color: 'var(--text-muted)', textAlign: 'center', marginTop: 10 }}>
-              Database backup will be available after the local database is connected.
+              Backup will be available after the local database is implemented.
             </p>
           </div>
         </div>

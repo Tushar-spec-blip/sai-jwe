@@ -1,17 +1,10 @@
 import { createContext, useContext, useState } from 'react';
-import { mockMetalRates } from '../data/mockData';
+import storageService from '../services/storageService';
 
 const MetalRatesContext = createContext(null);
 
 export function MetalRatesProvider({ children }) {
-  const [rates, setRates] = useState(() => {
-    try {
-      const stored = localStorage.getItem('ssj_demo_rates');
-      return stored ? JSON.parse(stored) : mockMetalRates;
-    } catch (e) {
-      return mockMetalRates;
-    }
-  });
+  const [rates, setRates] = useState(() => storageService.getMetalRates());
 
   const updateRate = (id, newRate) => {
     setRates(prev => {
@@ -20,11 +13,7 @@ export function MetalRatesProvider({ children }) {
         rate_per_gram: parseFloat(newRate) || r.rate_per_gram,
         updated_at: new Date().toISOString().split('T')[0],
       } : r);
-      try {
-        localStorage.setItem('ssj_demo_rates', JSON.stringify(updated));
-      } catch (e) {
-        console.warn('localStorage write error for metal rates', e);
-      }
+      storageService.saveMetalRates(updated);
       return updated;
     });
   };

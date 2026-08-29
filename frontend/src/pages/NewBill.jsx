@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Plus, Trash2, Search, CheckCircle, UserCheck, UserPlus, User, RotateCcw } from 'lucide-react';
-import { mockCustomers, mockProducts } from '../data/mockData';
+import { mockProducts } from '../data/mockData';
+import storageService from '../services/storageService';
 import { calculateInvoice, calculateItem, calculatePaymentStatus, formatCurrency } from '../utils/billingCalculator';
 import PrintPreviewModal from '../components/invoice/PrintPreviewModal';
 import { useSettings } from '../context/SettingsContext';
@@ -8,10 +9,10 @@ import { useMetalRates } from '../context/MetalRatesContext';
 
 const PAYMENT_METHODS = ['Cash', 'UPI', 'Card', 'Bank Transfer'];
 
-export default function NewBill({ onNavigate }) {
+export default function NewBill({ onNavigate, initialSaleType }) {
   const { settings } = useSettings();
   const { rates, getRateFor } = useMetalRates();
-  const [customerList, setCustomerList] = useState(mockCustomers);
+  const [customerList, setCustomerList] = useState(() => storageService.getCustomers());
 
   const createNewItem = (metal = 'Gold') => {
     const isSilver = metal === 'Silver';
@@ -37,7 +38,7 @@ export default function NewBill({ onNavigate }) {
   };
 
   // Sale Type State: null (Selection Menu) | 'GOLD' | 'SILVER'
-  const [saleType, setSaleType] = useState(null);
+  const [saleType, setSaleType] = useState(initialSaleType || null);
 
   // Customer selection modes: 'walkin' | 'existing' | 'new'
   const [customerMode, setCustomerMode] = useState('walkin');
@@ -174,7 +175,8 @@ export default function NewBill({ onNavigate }) {
       gstin: newCustForm.gstin.trim(),
       created_at: new Date().toISOString(),
     };
-    setCustomerList(prev => [created, ...prev]);
+    storageService.addCustomer(created);
+    setCustomerList(storageService.getCustomers());
     setSelectedCustomer(created);
     setCustomerMode('existing');
     setNewCustForm({ name: '', phone: '', address: '', gstin: '' });
@@ -211,6 +213,8 @@ export default function NewBill({ onNavigate }) {
       invoice_number: `${prefix}${Date.now().toString().slice(-4)}`,
       sale_type: saleType,
       sale_type_label: saleType === 'SILVER' ? 'Silver Sale' : 'Gold Sale',
+      transactionType: saleType === 'SILVER' ? 'SILVER_SALE' : 'GOLD_SALE',
+      metal: saleType === 'SILVER' ? 'Silver' : 'Gold',
       customer_id: selectedCustomer?.id || null,
       customer_name: selectedCustomer?.name || 'Walk-in Customer',
       customer_phone: selectedCustomer?.phone || '',
@@ -233,9 +237,11 @@ export default function NewBill({ onNavigate }) {
       balance_amount: paymentDetails.balanceAmount,
       payment_status: paymentDetails.paymentStatus,
       payments: payments.filter(p => parseFloat(p.amount) > 0).map(p => ({ payment_method: p.method, amount: parseFloat(p.amount) })),
+      payment_method: payments[0]?.method || 'Cash',
       notes,
     };
 
+    storageService.addInvoice(invoice);
     setSavedInvoice(invoice);
     setShowPreview(true);
   };

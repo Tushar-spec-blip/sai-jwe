@@ -3,12 +3,12 @@ import logo from '../../assets/logo.png';
 import {
   LayoutDashboard, Users, FileText, CreditCard,
   BarChart3, Coins, Settings, HardDrive, ChevronDown,
-  ShoppingBag, X
+  ShoppingBag, ShoppingCart, Receipt, Archive, X
 } from 'lucide-react';
 
 const navItems = [
-  { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, path: '/' },
-  { key: 'customers', label: 'Customers', icon: Users, path: '/customers' },
+  { key: 'dashboard',    label: 'Dashboard',        icon: LayoutDashboard, path: '/' },
+  { key: 'customers',   label: 'Customers',         icon: Users,           path: '/customers' },
   {
     key: 'jewellery', label: 'Jewellery', icon: ShoppingBag,
     children: [
@@ -16,21 +16,23 @@ const navItems = [
     ]
   },
   {
-    key: 'billing', label: 'Billing', icon: FileText,
+    key: 'billing', label: 'Billing / New Sale', icon: FileText,
     children: [
-      { key: 'new-bill', label: 'New Bill', path: '/new-bill' },
-      { key: 'bills', label: 'Bills / Invoices', path: '/bills' },
+      { key: 'gold-sale', label: 'Gold Sale', path: '/gold-sale', icon: ShoppingCart },
+      { key: 'silver-sale', label: 'Silver Sale', path: '/silver-sale', icon: ShoppingBag },
     ]
   },
-  { key: 'payments', label: 'Payments', icon: CreditCard, path: '/payments' },
-  { key: 'reports', label: 'Reports', icon: BarChart3, path: '/reports' },
-  { key: 'metal-rates', label: 'Metal Rates', icon: Coins, path: '/metal-rates' },
-  { key: 'settings', label: 'Settings', icon: Settings, path: '/settings' },
-  { key: 'backup', label: 'Backup & Restore', icon: HardDrive, path: '/backup' },
+  { key: 'old-purchase', label: 'Old Purchase',    icon: Archive,         path: '/old-purchase' },
+  { key: 'bills',        label: 'Bills / Invoices', icon: Receipt,         path: '/bills' },
+  { key: 'payments',    label: 'Payments',          icon: CreditCard,      path: '/payments' },
+  { key: 'reports',     label: 'Reports',           icon: BarChart3,       path: '/reports' },
+  { key: 'metal-rates', label: 'Metal Rates',       icon: Coins,           path: '/metal-rates' },
+  { key: 'settings',    label: 'Settings',          icon: Settings,        path: '/settings' },
+  { key: 'backup',      label: 'Backup & Restore',  icon: HardDrive,       path: '/backup' },
 ];
 
 export default function Sidebar({ currentPath, onNavigate, isOpen, onClose }) {
-  const [openGroups, setOpenGroups] = useState({ jewellery: true, billing: true });
+  const [openGroups, setOpenGroups] = useState({ jewellery: true, billing: true, purchase: true });
 
   const toggleGroup = (key) => {
     setOpenGroups(prev => ({ ...prev, [key]: !prev[key] }));
@@ -40,7 +42,7 @@ export default function Sidebar({ currentPath, onNavigate, isOpen, onClose }) {
 
   const isGroupActive = (item) => {
     if (!item.children) return false;
-    return item.children.some(child => currentPath === child.path);
+    return item.children.some(child => currentPath === child.path) || (item.key === 'billing' && (currentPath === '/new-bill' || currentPath === '/gold-sale' || currentPath === '/silver-sale'));
   };
 
   return (
@@ -75,15 +77,19 @@ export default function Sidebar({ currentPath, onNavigate, isOpen, onClose }) {
                   <ChevronDown className="chevron" />
                 </div>
                 <div className={`nav-sub-group ${isOpen ? 'open' : ''}`}>
-                  {item.children.map((child) => (
-                    <div
-                      key={child.key}
-                      className={`nav-item sub-item ${isActive(child.path) ? 'active' : ''}`}
-                      onClick={() => onNavigate(child.path)}
-                    >
-                      <span>{child.label}</span>
-                    </div>
-                  ))}
+                  {item.children.map((child) => {
+                    const ChildIcon = child.icon;
+                    return (
+                      <div
+                        key={child.key}
+                        className={`nav-item sub-item ${isActive(child.path) ? 'active' : ''}`}
+                        onClick={() => onNavigate(child.path)}
+                      >
+                        {ChildIcon && <ChildIcon className="nav-icon" style={{ width: 13, height: 13, opacity: 0.7 }} />}
+                        <span>{child.label}</span>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             );
@@ -104,7 +110,7 @@ export default function Sidebar({ currentPath, onNavigate, isOpen, onClose }) {
       </nav>
 
       <div className="sidebar-footer">
-        <div className="version">Sri Sai Jewels v1.0 — Phase 1</div>
+        <div className="version">Sri Sai Jewels v1.0 — Phase 1 Refinement</div>
       </div>
     </aside>
   );

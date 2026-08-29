@@ -1,5 +1,5 @@
 import { createContext, useContext, useState } from 'react';
-import { mockSettings } from '../data/mockData';
+import storageService from '../services/storageService';
 
 // Global Settings Context
 // Allows any page to read the current settings and save updates reactively.
@@ -7,29 +7,22 @@ import { mockSettings } from '../data/mockData';
 const SettingsContext = createContext(null);
 
 export function SettingsProvider({ children }) {
-  const [settings, setSettings] = useState(() => {
-    try {
-      const stored = localStorage.getItem('ssj_demo_settings');
-      return stored ? { ...mockSettings, ...JSON.parse(stored) } : { ...mockSettings };
-    } catch (e) {
-      return { ...mockSettings };
-    }
-  });
+  const [settings, setSettings] = useState(() => storageService.getSettings());
 
   const updateSettings = (updates) => {
     setSettings(prev => {
       const next = { ...prev, ...updates };
-      try {
-        localStorage.setItem('ssj_demo_settings', JSON.stringify(next));
-      } catch (e) {
-        console.warn('localStorage write error for settings', e);
-      }
+      storageService.saveSettings(next);
       return next;
     });
   };
 
   const updateSetting = (key, value) => {
     updateSettings({ [key]: value });
+  };
+
+  const refreshSettings = () => {
+    setSettings(storageService.getSettings());
   };
 
   return (

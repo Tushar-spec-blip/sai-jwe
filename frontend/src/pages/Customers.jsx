@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Plus, Search, Eye, Pencil, Trash2, Phone, MapPin, User } from 'lucide-react';
 import { Modal, ConfirmModal } from '../components/common/Modal';
-import { mockCustomers } from '../data/mockData';
+import storageService from '../services/storageService';
 
 function CustomerForm({ initial = {}, onSave, onClose }) {
   const [form, setForm] = useState({
@@ -58,28 +58,25 @@ function ViewCustomerModal({ customer, onClose, onEdit }) {
             </div>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: 'var(--cream)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 14 }}>
               <Phone size={16} color="var(--text-muted)" />
               <span>{customer.phone}</span>
             </div>
             {customer.address && (
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px 14px', background: 'var(--cream)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)' }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, fontSize: 14 }}>
                 <MapPin size={16} color="var(--text-muted)" style={{ marginTop: 2 }} />
                 <span>{customer.address}</span>
               </div>
             )}
             {customer.gstin && (
-              <div style={{ padding: '10px 14px', background: 'var(--cream)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)', fontSize: 13 }}>
-                <span style={{ color: 'var(--text-muted)' }}>GSTIN: </span><strong>{customer.gstin}</strong>
+              <div style={{ fontSize: 13, background: 'var(--cream)', padding: '6px 10px', borderRadius: 'var(--radius-sm)' }}>
+                <strong>GSTIN:</strong> {customer.gstin}
               </div>
             )}
-            <div style={{ padding: '10px 14px', background: 'var(--cream)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)', fontSize: 12, color: 'var(--text-muted)' }}>
-              Member since: {new Date(customer.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}
-            </div>
           </div>
-          <div className="modal-footer" style={{ padding: '16px 0 0', border: 'none' }}>
-            <button className="btn btn-secondary" onClick={onClose}>Close</button>
-            <button className="btn btn-primary" onClick={onEdit}>Edit Customer</button>
+          <div className="modal-footer" style={{ marginTop: 24, padding: '0', border: 'none' }}>
+            <button className="btn btn-secondary" onClick={() => onEdit(customer)}>Edit Customer</button>
+            <button className="btn btn-primary" onClick={onClose}>Close</button>
           </div>
         </div>
       )}
@@ -88,7 +85,7 @@ function ViewCustomerModal({ customer, onClose, onEdit }) {
 }
 
 export default function Customers() {
-  const [customers, setCustomers] = useState(mockCustomers);
+  const [customers, setCustomers] = useState(() => storageService.getCustomers());
   const [search, setSearch] = useState('');
   const [showAdd, setShowAdd] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
@@ -102,18 +99,20 @@ export default function Customers() {
   );
 
   const handleAdd = (form) => {
-    const newC = { ...form, id: Date.now(), created_at: new Date().toISOString() };
-    setCustomers(prev => [newC, ...prev]);
+    storageService.addCustomer(form);
+    setCustomers(storageService.getCustomers());
     setShowAdd(false);
   };
 
   const handleEdit = (form) => {
-    setCustomers(prev => prev.map(c => c.id === editTarget.id ? { ...c, ...form } : c));
+    const updated = storageService.updateCustomer({ ...editTarget, ...form });
+    setCustomers(updated);
     setEditTarget(null);
   };
 
   const handleDelete = () => {
-    setCustomers(prev => prev.filter(c => c.id !== deleteTarget.id));
+    const updated = storageService.deleteCustomer(deleteTarget.id);
+    setCustomers(updated);
     setDeleteTarget(null);
   };
 
