@@ -7,7 +7,7 @@ import PrintPreviewModal from '../components/invoice/PrintPreviewModal';
 import { useSettings } from '../context/SettingsContext';
 import { useMetalRates } from '../context/MetalRatesContext';
 
-const PAYMENT_METHODS = ['Cash', 'UPI', 'Card', 'Bank Transfer'];
+const PAYMENT_METHODS = ['Cash', 'UPI', 'Card', 'Bank Transfer', 'Deduction'];
 
 export default function NewBill({ onNavigate, initialSaleType }) {
   const { settings } = useSettings();
@@ -54,7 +54,6 @@ export default function NewBill({ onNavigate, initialSaleType }) {
   const [globalDiscount, setGlobalDiscount] = useState(0);
   const [gstRate, setGstRate] = useState(parseFloat(settings.gst_rate) || 3);
   const [payments, setPayments] = useState([{ method: 'Cash', amount: '' }]);
-  const [deduction, setDeduction] = useState('');
   const [notes, setNotes] = useState('');
   const [savedInvoice, setSavedInvoice] = useState(null);
   const [showPreview, setShowPreview] = useState(false);
@@ -109,16 +108,8 @@ export default function NewBill({ onNavigate, initialSaleType }) {
     { globalDiscount: parseFloat(globalDiscount) || 0, gstRate, roundingMethod: settings.rounding_method || 'nearest' }
   );
 
-  // Deduction is applied after grandTotal; final amount drives payment status
-  const deductionNum = Math.max(0, parseFloat(deduction) || 0);
-  const deductionVal = Math.min(deductionNum, calc.grandTotal);
-  const finalPayableAmount = Math.max(0, calc.grandTotal - deductionVal);
-  const deductionError = deductionNum > calc.grandTotal && calc.grandTotal > 0
-    ? 'Deduction cannot exceed the payable amount.'
-    : null;
-
   const paymentDetails = calculatePaymentStatus(
-    finalPayableAmount,
+    calc.grandTotal,
     payments.map(p => ({ amount: parseFloat(p.amount) || 0 }))
   );
 
@@ -242,8 +233,6 @@ export default function NewBill({ onNavigate, initialSaleType }) {
       gst_amount: calc.gstAmount,
       after_tax: calc.afterTax,
       grand_total: calc.grandTotal,
-      deduction: deductionVal,
-      final_payable: finalPayableAmount,
       paid_amount: paymentDetails.paidAmount,
       balance_amount: paymentDetails.balanceAmount,
       payment_status: paymentDetails.paymentStatus,
@@ -262,7 +251,6 @@ export default function NewBill({ onNavigate, initialSaleType }) {
     setSelectedCustomer({ name: 'Walk-in Customer', phone: '', address: '', gstin: '' });
     setItems([createNewItem(saleType === 'SILVER' ? 'Silver' : 'Gold')]);
     setGlobalDiscount(0);
-    setDeduction('');
     setPayments([{ method: 'Cash', amount: '' }]);
     setNotes('');
     setSavedInvoice(null);
@@ -755,45 +743,6 @@ export default function NewBill({ onNavigate, initialSaleType }) {
               </button>
             </div>
             <div className="billing-section-body">
-
-              {/* Deduction block */}
-              <div style={{ background: 'var(--cream)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-md)', padding: '12px 14px', marginBottom: 16 }}>
-                <div className="summary-line" style={{ marginBottom: 8 }}>
-                  <span style={{ fontWeight: 600, fontSize: 13, color: 'var(--text-dark)' }}>Amount Before Deduction</span>
-                  <span style={{ fontWeight: 700, fontSize: 14, color: saleType === 'SILVER' ? '#334155' : 'var(--gold-dark)' }}>{formatCurrency(calc.grandTotal)}</span>
-                </div>
-                <div className="form-row" style={{ marginBottom: 6, alignItems: 'flex-end', gap: 12 }}>
-                  <div className="form-group" style={{ flex: 1, marginBottom: 0 }}>
-                    <label className="form-label">Deduction (₹)</label>
-                    <input
-                      id="sale-deduction-input"
-                      className="form-input"
-                      type="number"
-                      inputMode="numeric"
-                      step="1"
-                      min="0"
-                      value={deduction}
-                      onChange={e => {
-                        const raw = e.target.value;
-                        // Allow empty string so user can backspace to clear
-                        if (raw === '' || raw === '-') { setDeduction(''); return; }
-                        const v = parseFloat(raw);
-                        if (!isNaN(v) && v >= 0) setDeduction(raw);
-                      }}
-                      placeholder="0"
-                      style={{ borderColor: deductionError ? '#dc2626' : undefined }}
-                    />
-                    {deductionError && (
-                      <span className="form-hint" style={{ color: '#dc2626' }}>{deductionError}</span>
-                    )}
-                  </div>
-                </div>
-                <div className="summary-line" style={{ borderTop: '1px dashed var(--border-light)', paddingTop: 8, marginTop: 4 }}>
-                  <span style={{ fontWeight: 700, fontSize: 14, color: 'var(--text-dark)' }}>Final Amount Payable</span>
-                  <span style={{ fontWeight: 800, fontSize: 16, color: '#16a34a' }}>{formatCurrency(finalPayableAmount)}</span>
-                </div>
-              </div>
-
               <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
                 {PAYMENT_METHODS.map(m => (
                   <button
@@ -896,27 +845,11 @@ export default function NewBill({ onNavigate, initialSaleType }) {
                 <span className="gt-label">Grand Total</span>
                 <span className="gt-value">{formatCurrency(calc.grandTotal)}</span>
               </div>
-              {deductionVal > 0 && (
-                <>
-                  <div className="summary-line" style={{ marginTop: 6 }}>
-                    <span className="s-label" style={{ color: '#dc2626' }}>Deduction</span>
-                    <span className="s-value" style={{ color: '#dc2626' }}>-{formatCurrency(deductionVal)}</span>
-                  </div>
-                  <div className="summary-line" style={{ borderTop: '2px solid var(--gold)', paddingTop: 6, marginTop: 4 }}>
-                    <span className="s-label" style={{ fontWeight: 700, color: '#16a34a', fontSize: 14 }}>Final Payable</span>
-                    <span className="s-value" style={{ fontWeight: 800, color: '#16a34a', fontSize: 15 }}>{formatCurrency(finalPayableAmount)}</span>
-                  </div>
-                </>
-              )}
             </div>
 
             {/* Payment Summary */}
             <div style={{ padding: '14px 20px', borderTop: '1px solid var(--border-light)' }}>
               <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Payment</div>
-              <div className="summary-line">
-                <span className="s-label">Final Payable</span>
-                <span className="s-value" style={{ fontWeight: 700 }}>{formatCurrency(finalPayableAmount)}</span>
-              </div>
               <div className="summary-line">
                 <span className="s-label">Paid</span>
                 <span className="s-value" style={{ color: '#16a34a' }}>{formatCurrency(paymentDetails.paidAmount)}</span>
@@ -967,8 +900,8 @@ export default function NewBill({ onNavigate, initialSaleType }) {
       {/* Sticky Mobile Summary Bar */}
       <div className="mobile-sticky-summary">
         <div>
-          <div className="mss-label">{deductionVal > 0 ? 'Final Payable' : `Total Amount (${items.length} items)`}</div>
-          <div className="mss-value">{formatCurrency(finalPayableAmount)}</div>
+          <div className="mss-label">Total Amount ({items.length} items)</div>
+          <div className="mss-value">{formatCurrency(calc.grandTotal)}</div>
         </div>
         {savedInvoice ? (
           <button className="btn btn-primary btn-sm" onClick={() => { setPreviewFormat('A4'); setShowPreview(true); }}>

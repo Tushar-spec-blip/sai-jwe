@@ -13,7 +13,7 @@ import PurchasePrintPreviewModal from '../components/invoice/PurchasePrintPrevie
 // These are SEPARATE from GOLD_SALE and SILVER_SALE.
 // ============================================================
 
-const PAYMENT_METHODS = ['Cash', 'UPI', 'Card', 'Bank Transfer'];
+const PAYMENT_METHODS = ['Cash', 'UPI', 'Card', 'Bank Transfer', 'Deduction'];
 
 const GOLD_PURITIES = ['24K', '22K', '18K', '14K', 'Other'];
 const SILVER_PURITIES = ['999', 'Other'];
@@ -41,8 +41,6 @@ function createBlankPurchaseForm(transactionType, defaultRate = 0) {
 function GoldPurchaseForm({ onBack, onSave, defaultRate }) {
   const [form, setForm] = useState(createBlankPurchaseForm('GOLD_PURCHASE', defaultRate));
 
-  const [deduction, setDeduction] = useState('');
-
   const set = (field, value) => setForm(prev => ({ ...prev, [field]: value }));
 
   const grossWt = parseFloat(form.gross_weight) || 0;
@@ -50,12 +48,7 @@ function GoldPurchaseForm({ onBack, onSave, defaultRate }) {
   const netWt = Math.max(0, grossWt - stoneWt);
   const purchaseRate = parseFloat(form.purchase_rate) || 0;
   const purchaseAmount = parseFloat((netWt * purchaseRate).toFixed(2));
-  const deductionNum = Math.max(0, parseFloat(deduction) || 0);
-  const deductionVal = Math.min(deductionNum, purchaseAmount);
-  const finalPayable = Math.max(0, purchaseAmount - deductionVal);
-  const deductionError = deductionNum > purchaseAmount && purchaseAmount > 0
-    ? 'Deduction cannot exceed the payable amount.'
-    : null;
+  const finalPayable = purchaseAmount;
 
   const handleSave = () => {
     if (!form.customer_name.trim()) {
@@ -98,9 +91,8 @@ function GoldPurchaseForm({ onBack, onSave, defaultRate }) {
       total_net_weight: netWt,
       purchase_rate: purchaseRate,
       purchase_amount: purchaseAmount,
-      deduction: deductionVal,
       deduction_notes: form.deduction_notes.trim(),
-      final_payable: finalPayable,
+      final_payable: purchaseAmount,
       payment_method: form.payment_method,
       notes: form.notes.trim(),
       created_at: form.purchase_date,
@@ -309,44 +301,6 @@ function GoldPurchaseForm({ onBack, onSave, defaultRate }) {
               <h3>Payment Method</h3>
             </div>
             <div className="billing-section-body">
-
-              {/* Deduction block */}
-              <div style={{ background: 'var(--cream)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-md)', padding: '12px 14px', marginBottom: 16 }}>
-                <div className="summary-line" style={{ marginBottom: 8 }}>
-                  <span style={{ fontWeight: 600, fontSize: 13, color: 'var(--text-dark)' }}>Purchase Amount</span>
-                  <span style={{ fontWeight: 700, fontSize: 14, color: 'var(--gold-dark)' }}>{purchaseAmount > 0 ? formatCurrency(purchaseAmount) : '—'}</span>
-                </div>
-                <div className="form-row" style={{ marginBottom: 6, alignItems: 'flex-end', gap: 12 }}>
-                  <div className="form-group" style={{ flex: 1, marginBottom: 0 }}>
-                    <label className="form-label">Deduction (₹)</label>
-                    <input
-                      id="gold-purchase-deduction-input"
-                      className="form-input"
-                      type="number"
-                      inputMode="numeric"
-                      step="1"
-                      min="0"
-                      value={deduction}
-                      onChange={e => {
-                        const raw = e.target.value;
-                        if (raw === '' || raw === '-') { setDeduction(''); return; }
-                        const v = parseFloat(raw);
-                        if (!isNaN(v) && v >= 0) setDeduction(raw);
-                      }}
-                      placeholder="0"
-                      style={{ borderColor: deductionError ? '#dc2626' : undefined }}
-                    />
-                    {deductionError && (
-                      <span className="form-hint" style={{ color: '#dc2626' }}>{deductionError}</span>
-                    )}
-                  </div>
-                </div>
-                <div className="summary-line" style={{ borderTop: '1px dashed var(--border-light)', paddingTop: 8, marginTop: 4 }}>
-                  <span style={{ fontWeight: 700, fontSize: 14, color: 'var(--text-dark)' }}>Final Payable to Customer</span>
-                  <span style={{ fontWeight: 800, fontSize: 16, color: '#16a34a' }}>{purchaseAmount > 0 ? formatCurrency(finalPayable) : '—'}</span>
-                </div>
-              </div>
-
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
                 {PAYMENT_METHODS.map(m => (
                   <button
@@ -401,15 +355,9 @@ function GoldPurchaseForm({ onBack, onSave, defaultRate }) {
                 <span className="s-label" style={{ fontWeight: 600 }}>Purchase Amount</span>
                 <span className="s-value" style={{ fontWeight: 600 }}>{purchaseAmount > 0 ? formatCurrency(purchaseAmount) : '—'}</span>
               </div>
-              {deductionVal > 0 && (
-                <div className="summary-line">
-                  <span className="s-label" style={{ color: '#dc2626' }}>Deduction</span>
-                  <span className="s-value" style={{ color: '#dc2626' }}>-{formatCurrency(deductionVal)}</span>
-                </div>
-              )}
               <div className="summary-grand-total">
                 <span className="gt-label">PAYABLE TO CUSTOMER</span>
-                <span className="gt-value">{finalPayable > 0 ? formatCurrency(finalPayable) : '—'}</span>
+                <span className="gt-value">{purchaseAmount > 0 ? formatCurrency(purchaseAmount) : '—'}</span>
               </div>
             </div>
             <div style={{ padding: '0 20px 20px' }}>
@@ -446,8 +394,6 @@ function GoldPurchaseForm({ onBack, onSave, defaultRate }) {
 function SilverPurchaseForm({ onBack, onSave, defaultRate }) {
   const [form, setForm] = useState(createBlankPurchaseForm('SILVER_PURCHASE', defaultRate));
 
-  const [deduction, setDeduction] = useState('');
-
   const set = (field, value) => setForm(prev => ({ ...prev, [field]: value }));
 
   const grossWt = parseFloat(form.gross_weight) || 0;
@@ -455,12 +401,7 @@ function SilverPurchaseForm({ onBack, onSave, defaultRate }) {
   const netWt = Math.max(0, grossWt - stoneWt);
   const purchaseRate = parseFloat(form.purchase_rate) || 0;
   const purchaseAmount = parseFloat((netWt * purchaseRate).toFixed(2));
-  const deductionNum = Math.max(0, parseFloat(deduction) || 0);
-  const deductionVal = Math.min(deductionNum, purchaseAmount);
-  const finalPayable = Math.max(0, purchaseAmount - deductionVal);
-  const deductionError = deductionNum > purchaseAmount && purchaseAmount > 0
-    ? 'Deduction cannot exceed the payable amount.'
-    : null;
+  const finalPayable = purchaseAmount;
 
   const handleSave = () => {
     if (!form.customer_name.trim()) {
@@ -503,9 +444,8 @@ function SilverPurchaseForm({ onBack, onSave, defaultRate }) {
       total_net_weight: netWt,
       purchase_rate: purchaseRate,
       purchase_amount: purchaseAmount,
-      deduction: deductionVal,
       deduction_notes: form.deduction_notes.trim(),
-      final_payable: finalPayable,
+      final_payable: purchaseAmount,
       payment_method: form.payment_method,
       notes: form.notes.trim(),
       created_at: form.purchase_date,
@@ -713,44 +653,6 @@ function SilverPurchaseForm({ onBack, onSave, defaultRate }) {
               <h3>Payment Method</h3>
             </div>
             <div className="billing-section-body">
-
-              {/* Deduction block */}
-              <div style={{ background: 'var(--cream)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-md)', padding: '12px 14px', marginBottom: 16 }}>
-                <div className="summary-line" style={{ marginBottom: 8 }}>
-                  <span style={{ fontWeight: 600, fontSize: 13, color: 'var(--text-dark)' }}>Purchase Amount</span>
-                  <span style={{ fontWeight: 700, fontSize: 14, color: '#334155' }}>{purchaseAmount > 0 ? formatCurrency(purchaseAmount) : '—'}</span>
-                </div>
-                <div className="form-row" style={{ marginBottom: 6, alignItems: 'flex-end', gap: 12 }}>
-                  <div className="form-group" style={{ flex: 1, marginBottom: 0 }}>
-                    <label className="form-label">Deduction (₹)</label>
-                    <input
-                      id="silver-purchase-deduction-input"
-                      className="form-input"
-                      type="number"
-                      inputMode="numeric"
-                      step="1"
-                      min="0"
-                      value={deduction}
-                      onChange={e => {
-                        const raw = e.target.value;
-                        if (raw === '' || raw === '-') { setDeduction(''); return; }
-                        const v = parseFloat(raw);
-                        if (!isNaN(v) && v >= 0) setDeduction(raw);
-                      }}
-                      placeholder="0"
-                      style={{ borderColor: deductionError ? '#dc2626' : undefined }}
-                    />
-                    {deductionError && (
-                      <span className="form-hint" style={{ color: '#dc2626' }}>{deductionError}</span>
-                    )}
-                  </div>
-                </div>
-                <div className="summary-line" style={{ borderTop: '1px dashed var(--border-light)', paddingTop: 8, marginTop: 4 }}>
-                  <span style={{ fontWeight: 700, fontSize: 14, color: 'var(--text-dark)' }}>Final Payable to Customer</span>
-                  <span style={{ fontWeight: 800, fontSize: 16, color: '#16a34a' }}>{purchaseAmount > 0 ? formatCurrency(finalPayable) : '—'}</span>
-                </div>
-              </div>
-
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
                 {PAYMENT_METHODS.map(m => (
                   <button
@@ -805,15 +707,9 @@ function SilverPurchaseForm({ onBack, onSave, defaultRate }) {
                 <span className="s-label" style={{ fontWeight: 600 }}>Purchase Amount</span>
                 <span className="s-value" style={{ fontWeight: 600 }}>{purchaseAmount > 0 ? formatCurrency(purchaseAmount) : '—'}</span>
               </div>
-              {deductionVal > 0 && (
-                <div className="summary-line">
-                  <span className="s-label" style={{ color: '#dc2626' }}>Deduction</span>
-                  <span className="s-value" style={{ color: '#dc2626' }}>-{formatCurrency(deductionVal)}</span>
-                </div>
-              )}
               <div className="summary-grand-total">
                 <span className="gt-label">PAYABLE TO CUSTOMER</span>
-                <span className="gt-value">{finalPayable > 0 ? formatCurrency(finalPayable) : '—'}</span>
+                <span className="gt-value">{purchaseAmount > 0 ? formatCurrency(purchaseAmount) : '—'}</span>
               </div>
             </div>
             <div style={{ padding: '0 20px 20px' }}>

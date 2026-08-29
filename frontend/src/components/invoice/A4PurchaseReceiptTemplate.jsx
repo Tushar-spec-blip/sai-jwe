@@ -146,10 +146,10 @@ export default function A4PurchaseReceiptTemplate({ purchase, shopSettings = {} 
               <td className="label-col">Purchase Amount</td>
               <td className="value-col">{formatCurrency(purchase_amount)}</td>
             </tr>
-            {purchase.deduction > 0 && (
+            {deduction_notes && (
               <tr>
-                <td className="label-col" style={{ color: '#dc2626', fontSize: 12 }}>Deduction</td>
-                <td className="value-col" style={{ color: '#dc2626', fontSize: 12 }}>-{formatCurrency(purchase.deduction)}</td>
+                <td className="label-col" style={{ color: '#dc2626', fontSize: 12 }}>Deduction / Adjustment</td>
+                <td className="value-col" style={{ color: '#dc2626', fontSize: 12 }}>—</td>
               </tr>
             )}
           </tbody>
