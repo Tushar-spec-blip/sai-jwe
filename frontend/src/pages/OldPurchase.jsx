@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Eye, Printer, Search, RotateCcw, CheckCircle, Plus } from 'lucide-react';
+import { Eye, Printer, Search, Trash2, Plus } from 'lucide-react';
 import storageService from '../services/storageService';
 import { formatCurrency, formatWeight } from '../utils/billingCalculator';
 import { useMetalRates } from '../context/MetalRatesContext';
@@ -18,81 +18,304 @@ const PAYMENT_METHODS = ['Cash', 'UPI', 'Card', 'Bank Transfer', 'Deducted to bi
 const GOLD_PURITIES = ['24K', '22K', '18K', '14K', 'Other'];
 const SILVER_PURITIES = ['999', 'Other'];
 
-function createBlankPurchaseForm(transactionType, defaultRate = 0) {
+// ============================================================
+// HELPERS
+// ============================================================
+
+function createBlankItem(transactionType, defaultRate = '') {
   return {
-    transactionType, // 'GOLD_PURCHASE' | 'SILVER_PURCHASE'
-    customer_name: '',
-    customer_phone: '',
-    purchase_date: new Date().toISOString().split('T')[0],
     description: '',
     purity: transactionType === 'GOLD_PURCHASE' ? '22K' : '999',
     gross_weight: '',
     stone_weight: '',
-    purchase_rate: defaultRate || '',
-    deduction_notes: '',
-    payment_method: 'Cash',
-    notes: '',
+    purchase_rate: defaultRate,
   };
 }
 
+function createBlankForm(transactionType, defaultRate = '') {
+  return {
+    customer_name: '',
+    customer_phone: '',
+    purchase_date: new Date().toISOString().split('T')[0],
+    deduction_notes: '',
+    payment_method: 'Cash',
+    notes: '',
+    items: [createBlankItem(transactionType, defaultRate)],
+  };
+}
+
+function calcItem(item) {
+  const gross = parseFloat(item.gross_weight) || 0;
+  const stone = parseFloat(item.stone_weight) || 0;
+  const net = Math.max(0, gross - stone);
+  const rate = parseFloat(item.purchase_rate) || 0;
+  const amount = parseFloat((net * rate).toFixed(2));
+  return { gross, stone, net, rate, amount };
+}
+
 // ============================================================
-// GOLD PURCHASE FORM
+// ITEM CARD — shared by both Gold and Silver forms
+// ============================================================
+function PurchaseItemCard({
+  index,
+  item,
+  transactionType,
+  totalItems,
+  onChange,
+  onRemove,
+}) {
+  const isGold = transactionType === 'GOLD_PURCHASE';
+  const purities = isGold ? GOLD_PURITIES : SILVER_PURITIES;
+  const rateLabel = isGold ? 'Purchase Gold Rate (Rs./g)' : 'Purchase Silver Rate (Rs./g)';
+  const ratePlaceholder = isGold ? 'e.g. 6200' : 'e.g. 78';
+  const descPlaceholder = isGold
+    ? 'e.g. Old Gold Ring, Old Gold Chain…'
+    : 'e.g. Old Silver Anklets, Old Silver Vessel…';
+
+  const { net, rate, amount } = calcItem(item);
+
+  const set = (field, value) => onChange(index, { ...item, [field]: value });
+
+  const accentColor = isGold ? '#8B6914' : '#334155';
+  const accentBg = isGold ? 'rgba(201,168,76,0.08)' : 'rgba(148,163,184,0.08)';
+  const accentBorder = isGold ? 'rgba(201,168,76,0.35)' : 'rgba(148,163,184,0.35)';
+
+  return (
+    <div style={{
+      border: `1.5px solid ${accentBorder}`,
+      borderRadius: 'var(--radius-lg)',
+      marginBottom: 16,
+      overflow: 'hidden',
+      background: 'var(--bg-card)',
+    }}>
+      {/* Item Header */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        background: accentBg,
+        padding: '10px 16px',
+        borderBottom: `1px solid ${accentBorder}`,
+      }}>
+        <span style={{ fontWeight: 700, fontSize: 13, color: accentColor }}>
+          Item {index + 1}
+        </span>
+        <button
+          type="button"
+          title={totalItems <= 1 ? 'At least one item is required' : 'Remove this item'}
+          disabled={totalItems <= 1}
+          onClick={() => onRemove(index)}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 4,
+            background: totalItems <= 1 ? 'transparent' : 'rgba(220,38,38,0.08)',
+            border: `1px solid ${totalItems <= 1 ? 'var(--border-light)' : 'rgba(220,38,38,0.25)'}`,
+            color: totalItems <= 1 ? 'var(--text-muted)' : '#dc2626',
+            borderRadius: 'var(--radius-md)',
+            padding: '4px 10px',
+            fontSize: 12,
+            fontWeight: 600,
+            cursor: totalItems <= 1 ? 'not-allowed' : 'pointer',
+            opacity: totalItems <= 1 ? 0.45 : 1,
+            transition: 'all 0.15s',
+          }}
+        >
+          <Trash2 size={12} />
+          Remove Item
+        </button>
+      </div>
+
+      {/* Item Fields */}
+      <div style={{ padding: '16px' }}>
+        <div className="bill-item-grid">
+          {/* Description — spans 3 cols */}
+          <div className="form-group" style={{ gridColumn: 'span 3' }}>
+            <label className="form-label">Item / Description <span className="required">*</span></label>
+            <input
+              className="form-input"
+              placeholder={descPlaceholder}
+              value={item.description}
+              onChange={e => set('description', e.target.value)}
+            />
+          </div>
+
+          {/* Purity */}
+          <div className="form-group">
+            <label className="form-label">{isGold ? 'Purity' : 'Purity (if applicable)'}</label>
+            <select
+              className="form-select"
+              value={item.purity}
+              onChange={e => set('purity', e.target.value)}
+            >
+              {purities.map(p => <option key={p} value={p}>{p}</option>)}
+            </select>
+          </div>
+
+          {/* Gross Weight */}
+          <div className="form-group">
+            <label className="form-label">Gross Weight (g) <span className="required">*</span></label>
+            <input
+              className="form-input"
+              type="number"
+              inputMode="decimal"
+              step="0.001"
+              placeholder="0.000"
+              value={item.gross_weight}
+              onChange={e => set('gross_weight', e.target.value)}
+            />
+          </div>
+
+          {/* Stone Weight */}
+          <div className="form-group">
+            <label className="form-label">Stone Weight (g)</label>
+            <input
+              className="form-input"
+              type="number"
+              inputMode="decimal"
+              step="0.001"
+              placeholder="0.000"
+              value={item.stone_weight}
+              onChange={e => set('stone_weight', e.target.value)}
+            />
+          </div>
+
+          {/* Net Weight — calculated */}
+          <div className="form-group">
+            <label className="form-label">Net Weight (g)</label>
+            <input
+              className="form-input"
+              value={net > 0 ? net.toFixed(3) : ''}
+              disabled
+              style={{ color: accentColor, fontWeight: 700 }}
+              placeholder="Auto-calculated"
+            />
+          </div>
+
+          {/* Purchase Rate */}
+          <div className="form-group">
+            <label className="form-label">{rateLabel} <span className="required">*</span></label>
+            <input
+              className="form-input"
+              type="number"
+              inputMode="numeric"
+              step="1"
+              placeholder={ratePlaceholder}
+              value={item.purchase_rate}
+              onChange={e => set('purchase_rate', e.target.value)}
+            />
+            <span className="form-hint">
+              {isGold ? 'Rate paid to customer per gram of net gold weight' : 'Silver rate paid to customer per gram of net weight'}
+            </span>
+          </div>
+        </div>
+
+        {/* Live Calculation for this item */}
+        {net > 0 && rate > 0 && (
+          <div className="bill-item-calculation" style={{ marginTop: 12 }}>
+            <div className="calc-row">
+              <span className="label">Net Weight</span>
+              <span className="value">{net.toFixed(3)} g</span>
+            </div>
+            <div className="calc-row">
+              <span className="label">{isGold ? 'Gold Rate' : 'Silver Rate'}</span>
+              <span className="value">Rs. {rate}/g</span>
+            </div>
+            <div className="calc-row calc-total">
+              <span className="label" style={{ color: 'inherit' }}>Item {index + 1} Purchase Amount</span>
+              <span className="value">{formatCurrency(amount)}</span>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// GOLD PURCHASE FORM — multi-item
 // ============================================================
 function GoldPurchaseForm({ onBack, onSave, defaultRate }) {
-  const [form, setForm] = useState(createBlankPurchaseForm('GOLD_PURCHASE', defaultRate));
+  const [form, setForm] = useState(createBlankForm('GOLD_PURCHASE', defaultRate));
 
-  const set = (field, value) => setForm(prev => ({ ...prev, [field]: value }));
+  const setField = (field, value) => setForm(prev => ({ ...prev, [field]: value }));
 
-  const grossWt = parseFloat(form.gross_weight) || 0;
-  const stoneWt = parseFloat(form.stone_weight) || 0;
-  const netWt = Math.max(0, grossWt - stoneWt);
-  const purchaseRate = parseFloat(form.purchase_rate) || 0;
-  const purchaseAmount = parseFloat((netWt * purchaseRate).toFixed(2));
-  const finalPayable = purchaseAmount;
+  const handleItemChange = (index, updatedItem) => {
+    setForm(prev => {
+      const items = [...prev.items];
+      items[index] = updatedItem;
+      return { ...prev, items };
+    });
+  };
+
+  const handleAddItem = () => {
+    setForm(prev => ({
+      ...prev,
+      items: [...prev.items, createBlankItem('GOLD_PURCHASE', defaultRate)],
+    }));
+  };
+
+  const handleRemoveItem = (index) => {
+    setForm(prev => {
+      if (prev.items.length <= 1) return prev;
+      const items = prev.items.filter((_, i) => i !== index);
+      return { ...prev, items };
+    });
+  };
+
+  // Computed totals
+  const calcedItems = form.items.map(calcItem);
+  const totalNetWeight = calcedItems.reduce((s, c) => s + c.net, 0);
+  const totalAmount = parseFloat(calcedItems.reduce((s, c) => s + c.amount, 0).toFixed(2));
 
   const handleSave = () => {
     if (!form.customer_name.trim()) {
       alert('Please enter the Customer Name.');
       return;
     }
-    if (!form.description.trim()) {
-      alert('Please enter the Item / Description.');
-      return;
-    }
-    if (grossWt <= 0) {
-      alert('Please enter a valid Gross Weight.');
-      return;
-    }
-    if (purchaseRate <= 0) {
-      alert('Please enter a valid Purchase Gold Rate.');
-      return;
+    for (let i = 0; i < form.items.length; i++) {
+      const item = form.items[i];
+      const { gross, rate } = calcedItems[i];
+      if (!item.description.trim()) {
+        alert(`Please enter the Item / Description for Item ${i + 1}.`);
+        return;
+      }
+      if (gross <= 0) {
+        alert(`Please enter a valid Gross Weight for Item ${i + 1}.`);
+        return;
+      }
+      if (rate <= 0) {
+        alert(`Please enter a valid Purchase Gold Rate for Item ${i + 1}.`);
+        return;
+      }
     }
 
     const prefix = 'PUR-';
+    const purchaseNumber = `${prefix}${Date.now().toString().slice(-6)}`;
     const record = {
-      id: `${prefix}${Date.now().toString().slice(-4)}`,
-      purchase_number: `${prefix}${Date.now().toString().slice(-4)}`,
+      id: purchaseNumber,
+      purchase_number: purchaseNumber,
       transactionType: 'GOLD_PURCHASE',
       transaction_type_label: 'Gold Purchase',
       customer_name: form.customer_name.trim(),
       customer_phone: form.customer_phone.trim(),
       purchase_date: form.purchase_date,
-      items: [
-        {
-          description: form.description.trim(),
-          purity: form.purity,
-          gross_weight: grossWt,
-          stone_weight: stoneWt,
-          net_weight: netWt,
-          purchase_rate: purchaseRate,
-          purchase_amount: purchaseAmount,
-        },
-      ],
-      total_net_weight: netWt,
-      purchase_rate: purchaseRate,
-      purchase_amount: purchaseAmount,
+      items: form.items.map((item, i) => {
+        const c = calcedItems[i];
+        return {
+          description: item.description.trim(),
+          purity: item.purity,
+          gross_weight: c.gross,
+          stone_weight: c.stone,
+          net_weight: c.net,
+          purchase_rate: c.rate,
+          purchase_amount: c.amount,
+        };
+      }),
+      total_net_weight: totalNetWeight,
+      purchase_amount: totalAmount,
       deduction_notes: form.deduction_notes.trim(),
-      final_payable: purchaseAmount,
+      final_payable: totalAmount,
       payment_method: form.payment_method,
       notes: form.notes.trim(),
       created_at: form.purchase_date,
@@ -146,7 +369,7 @@ function GoldPurchaseForm({ onBack, onSave, defaultRate }) {
                     className="form-input"
                     placeholder="Name of the customer selling the jewellery"
                     value={form.customer_name}
-                    onChange={e => set('customer_name', e.target.value)}
+                    onChange={e => setField('customer_name', e.target.value)}
                   />
                 </div>
                 <div className="form-group">
@@ -157,7 +380,7 @@ function GoldPurchaseForm({ onBack, onSave, defaultRate }) {
                     inputMode="tel"
                     placeholder="Mobile number"
                     value={form.customer_phone}
-                    onChange={e => set('customer_phone', e.target.value)}
+                    onChange={e => setField('customer_phone', e.target.value)}
                   />
                 </div>
                 <div className="form-group">
@@ -166,99 +389,73 @@ function GoldPurchaseForm({ onBack, onSave, defaultRate }) {
                     className="form-input"
                     type="date"
                     value={form.purchase_date}
-                    onChange={e => set('purchase_date', e.target.value)}
+                    onChange={e => setField('purchase_date', e.target.value)}
                   />
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Step 2: Gold Details */}
+          {/* Step 2: Gold Items */}
           <div className="billing-section">
             <div className="billing-section-header">
               <span className="billing-section-number">2</span>
-              <h3>Gold Details</h3>
+              <h3>Gold Items</h3>
             </div>
             <div className="billing-section-body">
-              <div className="bill-item-grid">
-                <div className="form-group" style={{ gridColumn: 'span 3' }}>
-                  <label className="form-label">Item / Description <span className="required">*</span></label>
-                  <input
-                    className="form-input"
-                    placeholder="e.g. Old Gold Ring, Old Gold Chain, etc."
-                    value={form.description}
-                    onChange={e => set('description', e.target.value)}
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Purity</label>
-                  <select className="form-select" value={form.purity} onChange={e => set('purity', e.target.value)}>
-                    {GOLD_PURITIES.map(p => <option key={p} value={p}>{p}</option>)}
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Gross Weight (g) <span className="required">*</span></label>
-                  <input
-                    className="form-input"
-                    type="number"
-                    inputMode="decimal"
-                    step="0.001"
-                    placeholder="0.000"
-                    value={form.gross_weight}
-                    onChange={e => set('gross_weight', e.target.value)}
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Stone Weight (g)</label>
-                  <input
-                    className="form-input"
-                    type="number"
-                    inputMode="decimal"
-                    step="0.001"
-                    placeholder="0.000"
-                    value={form.stone_weight}
-                    onChange={e => set('stone_weight', e.target.value)}
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Net Weight (g)</label>
-                  <input
-                    className="form-input"
-                    value={netWt > 0 ? netWt.toFixed(3) : ''}
-                    disabled
-                    style={{ color: 'var(--gold-dark)', fontWeight: 700 }}
-                    placeholder="Auto-calculated"
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Purchase Gold Rate (Rs./g) <span className="required">*</span></label>
-                  <input
-                    className="form-input"
-                    type="number"
-                    inputMode="numeric"
-                    step="1"
-                    placeholder="e.g. 6200"
-                    value={form.purchase_rate}
-                    onChange={e => set('purchase_rate', e.target.value)}
-                  />
-                  <span className="form-hint">Rate paid to customer per gram of net gold weight</span>
-                </div>
-              </div>
+              {form.items.map((item, index) => (
+                <PurchaseItemCard
+                  key={index}
+                  index={index}
+                  item={item}
+                  transactionType="GOLD_PURCHASE"
+                  totalItems={form.items.length}
+                  onChange={handleItemChange}
+                  onRemove={handleRemoveItem}
+                />
+              ))}
 
-              {/* Live Calculation Preview */}
-              {netWt > 0 && purchaseRate > 0 && (
-                <div className="bill-item-calculation" style={{ marginTop: 12 }}>
-                  <div className="calc-row">
-                    <span className="label">Net Weight</span>
-                    <span className="value">{netWt.toFixed(3)} g</span>
+              {/* Add Another Item */}
+              <button
+                type="button"
+                onClick={handleAddItem}
+                className="btn btn-secondary"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  marginTop: 4,
+                  fontSize: 13,
+                  fontWeight: 600,
+                  padding: '9px 18px',
+                  borderStyle: 'dashed',
+                }}
+              >
+                <Plus size={15} />
+                Add Another Item
+              </button>
+
+              {/* Items Total Preview */}
+              {form.items.length > 1 && totalAmount > 0 && (
+                <div style={{
+                  marginTop: 16,
+                  padding: '12px 16px',
+                  background: 'rgba(201,168,76,0.08)',
+                  border: '1.5px solid rgba(201,168,76,0.3)',
+                  borderRadius: 'var(--radius-md)',
+                }}>
+                  <div style={{ fontWeight: 700, fontSize: 12, color: '#8B6914', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    Items Subtotal
                   </div>
-                  <div className="calc-row">
-                    <span className="label">Gold Rate</span>
-                    <span className="value">Rs. {purchaseRate}/g</span>
-                  </div>
-                  <div className="calc-row calc-total">
-                    <span className="label" style={{ color: 'inherit' }}>Calculated Purchase Amount</span>
-                    <span className="value">{formatCurrency(purchaseAmount)}</span>
+                  {calcedItems.map((c, i) => c.amount > 0 && (
+                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 4, color: 'var(--text-muted)' }}>
+                      <span>Item {i + 1} — {form.items[i].description || '(no description)'}</span>
+                      <span style={{ fontWeight: 600, color: 'var(--text-dark)' }}>{formatCurrency(c.amount)}</span>
+                    </div>
+                  ))}
+                  <div style={{ borderTop: '1px solid rgba(201,168,76,0.3)', paddingTop: 8, marginTop: 4, display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: 14, color: '#8B6914' }}>
+                    <span>Total Purchase Amount</span>
+                    <span>{formatCurrency(totalAmount)}</span>
                   </div>
                 </div>
               )}
@@ -278,7 +475,7 @@ function GoldPurchaseForm({ onBack, onSave, defaultRate }) {
                   className="form-input"
                   placeholder="e.g. Deduction for purity testing, melting charge, etc. (Optional)"
                   value={form.deduction_notes}
-                  onChange={e => set('deduction_notes', e.target.value)}
+                  onChange={e => setField('deduction_notes', e.target.value)}
                 />
                 <span className="form-hint">Applicable deduction fields will be added in a future update</span>
               </div>
@@ -288,7 +485,7 @@ function GoldPurchaseForm({ onBack, onSave, defaultRate }) {
                   className="form-input"
                   placeholder="Any additional notes about this purchase..."
                   value={form.notes}
-                  onChange={e => set('notes', e.target.value)}
+                  onChange={e => setField('notes', e.target.value)}
                 />
               </div>
             </div>
@@ -307,7 +504,7 @@ function GoldPurchaseForm({ onBack, onSave, defaultRate }) {
                     key={m}
                     type="button"
                     className={`payment-method-btn ${form.payment_method === m ? 'selected' : ''}`}
-                    onClick={() => set('payment_method', m)}
+                    onClick={() => setField('payment_method', m)}
                   >
                     {m}
                   </button>
@@ -336,34 +533,27 @@ function GoldPurchaseForm({ onBack, onSave, defaultRate }) {
                 <span className="s-value" style={{ fontSize: 13 }}>{form.customer_name || '—'}</span>
               </div>
               <div className="summary-line">
-                <span className="s-label">Item</span>
-                <span className="s-value" style={{ fontSize: 13 }}>{form.description || '—'}</span>
+                <span className="s-label">Number of Items</span>
+                <span className="s-value" style={{ fontWeight: 600 }}>{form.items.length}</span>
               </div>
               <div className="summary-line">
-                <span className="s-label">Purity</span>
-                <span className="s-value">{form.purity}</span>
+                <span className="s-label">Total Net Weight</span>
+                <span className="s-value" style={{ fontWeight: 600 }}>{totalNetWeight > 0 ? `${totalNetWeight.toFixed(3)} g` : '—'}</span>
+              </div>
+              <div className="summary-line" style={{ borderTop: '1px solid var(--border-light)', paddingTop: 6, marginTop: 4 }}>
+                <span className="s-label" style={{ fontWeight: 600 }}>Total Purchase Amount</span>
+                <span className="s-value" style={{ fontWeight: 600 }}>{totalAmount > 0 ? formatCurrency(totalAmount) : '—'}</span>
               </div>
               <div className="summary-line">
-                <span className="s-label">Net Weight</span>
-                <span className="s-value">{netWt > 0 ? `${netWt.toFixed(3)} g` : '—'}</span>
-              </div>
-              <div className="summary-line">
-                <span className="s-label">Gold Rate</span>
-                <span className="s-value">{purchaseRate > 0 ? `Rs. ${purchaseRate}/g` : '—'}</span>
-              </div>
-              <div className="summary-line" style={{ borderTop: '1px solid var(--border-light)', paddingTop: 6 }}>
-                <span className="s-label" style={{ fontWeight: 600 }}>Purchase Amount</span>
-                <span className="s-value" style={{ fontWeight: 600 }}>{purchaseAmount > 0 ? formatCurrency(purchaseAmount) : '—'}</span>
+                <span className="s-label">Payment Method</span>
+                <span className="s-value" style={{ fontSize: 13 }}>{form.payment_method}</span>
               </div>
               <div className="summary-grand-total">
                 <span className="gt-label">PAYABLE TO CUSTOMER</span>
-                <span className="gt-value">{purchaseAmount > 0 ? formatCurrency(purchaseAmount) : '—'}</span>
+                <span className="gt-value">{totalAmount > 0 ? formatCurrency(totalAmount) : '—'}</span>
               </div>
             </div>
             <div style={{ padding: '0 20px 20px' }}>
-              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 10 }}>
-                Payment: <strong>{form.payment_method}</strong>
-              </div>
               <button
                 className="btn btn-primary"
                 style={{ width: '100%', justifyContent: 'center', padding: '12px', background: '#8B6914', borderColor: '#8B6914' }}
@@ -380,7 +570,7 @@ function GoldPurchaseForm({ onBack, onSave, defaultRate }) {
       <div className="mobile-sticky-summary">
         <div>
           <div className="mss-label">Payable to Customer</div>
-          <div className="mss-value">{finalPayable > 0 ? formatCurrency(finalPayable) : '—'}</div>
+          <div className="mss-value">{totalAmount > 0 ? formatCurrency(totalAmount) : '—'}</div>
         </div>
         <button className="btn btn-primary btn-sm" onClick={handleSave}>Save Receipt</button>
       </div>
@@ -389,63 +579,89 @@ function GoldPurchaseForm({ onBack, onSave, defaultRate }) {
 }
 
 // ============================================================
-// SILVER PURCHASE FORM
+// SILVER PURCHASE FORM — multi-item
 // ============================================================
 function SilverPurchaseForm({ onBack, onSave, defaultRate }) {
-  const [form, setForm] = useState(createBlankPurchaseForm('SILVER_PURCHASE', defaultRate));
+  const [form, setForm] = useState(createBlankForm('SILVER_PURCHASE', defaultRate));
 
-  const set = (field, value) => setForm(prev => ({ ...prev, [field]: value }));
+  const setField = (field, value) => setForm(prev => ({ ...prev, [field]: value }));
 
-  const grossWt = parseFloat(form.gross_weight) || 0;
-  const stoneWt = parseFloat(form.stone_weight) || 0;
-  const netWt = Math.max(0, grossWt - stoneWt);
-  const purchaseRate = parseFloat(form.purchase_rate) || 0;
-  const purchaseAmount = parseFloat((netWt * purchaseRate).toFixed(2));
-  const finalPayable = purchaseAmount;
+  const handleItemChange = (index, updatedItem) => {
+    setForm(prev => {
+      const items = [...prev.items];
+      items[index] = updatedItem;
+      return { ...prev, items };
+    });
+  };
+
+  const handleAddItem = () => {
+    setForm(prev => ({
+      ...prev,
+      items: [...prev.items, createBlankItem('SILVER_PURCHASE', defaultRate)],
+    }));
+  };
+
+  const handleRemoveItem = (index) => {
+    setForm(prev => {
+      if (prev.items.length <= 1) return prev;
+      const items = prev.items.filter((_, i) => i !== index);
+      return { ...prev, items };
+    });
+  };
+
+  // Computed totals
+  const calcedItems = form.items.map(calcItem);
+  const totalNetWeight = calcedItems.reduce((s, c) => s + c.net, 0);
+  const totalAmount = parseFloat(calcedItems.reduce((s, c) => s + c.amount, 0).toFixed(2));
 
   const handleSave = () => {
     if (!form.customer_name.trim()) {
       alert('Please enter the Customer Name.');
       return;
     }
-    if (!form.description.trim()) {
-      alert('Please enter the Item / Description.');
-      return;
-    }
-    if (grossWt <= 0) {
-      alert('Please enter a valid Gross Weight.');
-      return;
-    }
-    if (purchaseRate <= 0) {
-      alert('Please enter a valid Purchase Silver Rate.');
-      return;
+    for (let i = 0; i < form.items.length; i++) {
+      const item = form.items[i];
+      const { gross, rate } = calcedItems[i];
+      if (!item.description.trim()) {
+        alert(`Please enter the Item / Description for Item ${i + 1}.`);
+        return;
+      }
+      if (gross <= 0) {
+        alert(`Please enter a valid Gross Weight for Item ${i + 1}.`);
+        return;
+      }
+      if (rate <= 0) {
+        alert(`Please enter a valid Purchase Silver Rate for Item ${i + 1}.`);
+        return;
+      }
     }
 
     const prefix = 'PUR-';
+    const purchaseNumber = `${prefix}${Date.now().toString().slice(-6)}`;
     const record = {
-      id: `${prefix}${Date.now().toString().slice(-4)}`,
-      purchase_number: `${prefix}${Date.now().toString().slice(-4)}`,
+      id: purchaseNumber,
+      purchase_number: purchaseNumber,
       transactionType: 'SILVER_PURCHASE',
       transaction_type_label: 'Silver Purchase',
       customer_name: form.customer_name.trim(),
       customer_phone: form.customer_phone.trim(),
       purchase_date: form.purchase_date,
-      items: [
-        {
-          description: form.description.trim(),
-          purity: form.purity,
-          gross_weight: grossWt,
-          stone_weight: stoneWt,
-          net_weight: netWt,
-          purchase_rate: purchaseRate,
-          purchase_amount: purchaseAmount,
-        },
-      ],
-      total_net_weight: netWt,
-      purchase_rate: purchaseRate,
-      purchase_amount: purchaseAmount,
+      items: form.items.map((item, i) => {
+        const c = calcedItems[i];
+        return {
+          description: item.description.trim(),
+          purity: item.purity,
+          gross_weight: c.gross,
+          stone_weight: c.stone,
+          net_weight: c.net,
+          purchase_rate: c.rate,
+          purchase_amount: c.amount,
+        };
+      }),
+      total_net_weight: totalNetWeight,
+      purchase_amount: totalAmount,
       deduction_notes: form.deduction_notes.trim(),
-      final_payable: purchaseAmount,
+      final_payable: totalAmount,
       payment_method: form.payment_method,
       notes: form.notes.trim(),
       created_at: form.purchase_date,
@@ -499,7 +715,7 @@ function SilverPurchaseForm({ onBack, onSave, defaultRate }) {
                     className="form-input"
                     placeholder="Name of the customer selling the jewellery"
                     value={form.customer_name}
-                    onChange={e => set('customer_name', e.target.value)}
+                    onChange={e => setField('customer_name', e.target.value)}
                   />
                 </div>
                 <div className="form-group">
@@ -510,7 +726,7 @@ function SilverPurchaseForm({ onBack, onSave, defaultRate }) {
                     inputMode="tel"
                     placeholder="Mobile number"
                     value={form.customer_phone}
-                    onChange={e => set('customer_phone', e.target.value)}
+                    onChange={e => setField('customer_phone', e.target.value)}
                   />
                 </div>
                 <div className="form-group">
@@ -519,99 +735,73 @@ function SilverPurchaseForm({ onBack, onSave, defaultRate }) {
                     className="form-input"
                     type="date"
                     value={form.purchase_date}
-                    onChange={e => set('purchase_date', e.target.value)}
+                    onChange={e => setField('purchase_date', e.target.value)}
                   />
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Step 2: Silver Details */}
+          {/* Step 2: Silver Items */}
           <div className="billing-section">
             <div className="billing-section-header">
               <span className="billing-section-number">2</span>
-              <h3>Silver Details</h3>
+              <h3>Silver Items</h3>
             </div>
             <div className="billing-section-body">
-              <div className="bill-item-grid">
-                <div className="form-group" style={{ gridColumn: 'span 3' }}>
-                  <label className="form-label">Item / Description <span className="required">*</span></label>
-                  <input
-                    className="form-input"
-                    placeholder="e.g. Old Silver Anklets, Old Silver Vessel, etc."
-                    value={form.description}
-                    onChange={e => set('description', e.target.value)}
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Purity (if applicable)</label>
-                  <select className="form-select" value={form.purity} onChange={e => set('purity', e.target.value)}>
-                    {SILVER_PURITIES.map(p => <option key={p} value={p}>{p}</option>)}
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Gross Weight (g) <span className="required">*</span></label>
-                  <input
-                    className="form-input"
-                    type="number"
-                    inputMode="decimal"
-                    step="0.001"
-                    placeholder="0.000"
-                    value={form.gross_weight}
-                    onChange={e => set('gross_weight', e.target.value)}
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Stone Weight (g)</label>
-                  <input
-                    className="form-input"
-                    type="number"
-                    inputMode="decimal"
-                    step="0.001"
-                    placeholder="0.000"
-                    value={form.stone_weight}
-                    onChange={e => set('stone_weight', e.target.value)}
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Net Weight (g)</label>
-                  <input
-                    className="form-input"
-                    value={netWt > 0 ? netWt.toFixed(3) : ''}
-                    disabled
-                    style={{ color: '#334155', fontWeight: 700 }}
-                    placeholder="Auto-calculated"
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Purchase Silver Rate (Rs./g) <span className="required">*</span></label>
-                  <input
-                    className="form-input"
-                    type="number"
-                    inputMode="numeric"
-                    step="1"
-                    placeholder="e.g. 78"
-                    value={form.purchase_rate}
-                    onChange={e => set('purchase_rate', e.target.value)}
-                  />
-                  <span className="form-hint">Silver rate paid to customer per gram of net weight</span>
-                </div>
-              </div>
+              {form.items.map((item, index) => (
+                <PurchaseItemCard
+                  key={index}
+                  index={index}
+                  item={item}
+                  transactionType="SILVER_PURCHASE"
+                  totalItems={form.items.length}
+                  onChange={handleItemChange}
+                  onRemove={handleRemoveItem}
+                />
+              ))}
 
-              {/* Live Calculation Preview */}
-              {netWt > 0 && purchaseRate > 0 && (
-                <div className="bill-item-calculation" style={{ marginTop: 12 }}>
-                  <div className="calc-row">
-                    <span className="label">Net Weight</span>
-                    <span className="value">{netWt.toFixed(3)} g</span>
+              {/* Add Another Item */}
+              <button
+                type="button"
+                onClick={handleAddItem}
+                className="btn btn-secondary"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  marginTop: 4,
+                  fontSize: 13,
+                  fontWeight: 600,
+                  padding: '9px 18px',
+                  borderStyle: 'dashed',
+                }}
+              >
+                <Plus size={15} />
+                Add Another Item
+              </button>
+
+              {/* Items Total Preview */}
+              {form.items.length > 1 && totalAmount > 0 && (
+                <div style={{
+                  marginTop: 16,
+                  padding: '12px 16px',
+                  background: 'rgba(148,163,184,0.08)',
+                  border: '1.5px solid rgba(148,163,184,0.3)',
+                  borderRadius: 'var(--radius-md)',
+                }}>
+                  <div style={{ fontWeight: 700, fontSize: 12, color: '#334155', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    Items Subtotal
                   </div>
-                  <div className="calc-row">
-                    <span className="label">Silver Rate</span>
-                    <span className="value">Rs. {purchaseRate}/g</span>
-                  </div>
-                  <div className="calc-row calc-total">
-                    <span className="label" style={{ color: 'inherit' }}>Calculated Purchase Amount</span>
-                    <span className="value">{formatCurrency(purchaseAmount)}</span>
+                  {calcedItems.map((c, i) => c.amount > 0 && (
+                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 4, color: 'var(--text-muted)' }}>
+                      <span>Item {i + 1} — {form.items[i].description || '(no description)'}</span>
+                      <span style={{ fontWeight: 600, color: 'var(--text-dark)' }}>{formatCurrency(c.amount)}</span>
+                    </div>
+                  ))}
+                  <div style={{ borderTop: '1px solid rgba(148,163,184,0.3)', paddingTop: 8, marginTop: 4, display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: 14, color: '#334155' }}>
+                    <span>Total Purchase Amount</span>
+                    <span>{formatCurrency(totalAmount)}</span>
                   </div>
                 </div>
               )}
@@ -631,7 +821,7 @@ function SilverPurchaseForm({ onBack, onSave, defaultRate }) {
                   className="form-input"
                   placeholder="e.g. Any applicable deduction notes (Optional)"
                   value={form.deduction_notes}
-                  onChange={e => set('deduction_notes', e.target.value)}
+                  onChange={e => setField('deduction_notes', e.target.value)}
                 />
               </div>
               <div className="form-group">
@@ -640,7 +830,7 @@ function SilverPurchaseForm({ onBack, onSave, defaultRate }) {
                   className="form-input"
                   placeholder="Any additional notes..."
                   value={form.notes}
-                  onChange={e => set('notes', e.target.value)}
+                  onChange={e => setField('notes', e.target.value)}
                 />
               </div>
             </div>
@@ -659,7 +849,7 @@ function SilverPurchaseForm({ onBack, onSave, defaultRate }) {
                     key={m}
                     type="button"
                     className={`payment-method-btn ${form.payment_method === m ? 'selected' : ''}`}
-                    onClick={() => set('payment_method', m)}
+                    onClick={() => setField('payment_method', m)}
                   >
                     {m}
                   </button>
@@ -688,34 +878,27 @@ function SilverPurchaseForm({ onBack, onSave, defaultRate }) {
                 <span className="s-value" style={{ fontSize: 13 }}>{form.customer_name || '—'}</span>
               </div>
               <div className="summary-line">
-                <span className="s-label">Item</span>
-                <span className="s-value" style={{ fontSize: 13 }}>{form.description || '—'}</span>
+                <span className="s-label">Number of Items</span>
+                <span className="s-value" style={{ fontWeight: 600 }}>{form.items.length}</span>
               </div>
               <div className="summary-line">
-                <span className="s-label">Purity</span>
-                <span className="s-value">{form.purity}</span>
+                <span className="s-label">Total Net Weight</span>
+                <span className="s-value" style={{ fontWeight: 600 }}>{totalNetWeight > 0 ? `${totalNetWeight.toFixed(3)} g` : '—'}</span>
+              </div>
+              <div className="summary-line" style={{ borderTop: '1px solid var(--border-light)', paddingTop: 6, marginTop: 4 }}>
+                <span className="s-label" style={{ fontWeight: 600 }}>Total Purchase Amount</span>
+                <span className="s-value" style={{ fontWeight: 600 }}>{totalAmount > 0 ? formatCurrency(totalAmount) : '—'}</span>
               </div>
               <div className="summary-line">
-                <span className="s-label">Net Weight</span>
-                <span className="s-value">{netWt > 0 ? `${netWt.toFixed(3)} g` : '—'}</span>
-              </div>
-              <div className="summary-line">
-                <span className="s-label">Silver Rate</span>
-                <span className="s-value">{purchaseRate > 0 ? `Rs. ${purchaseRate}/g` : '—'}</span>
-              </div>
-              <div className="summary-line" style={{ borderTop: '1px solid var(--border-light)', paddingTop: 6 }}>
-                <span className="s-label" style={{ fontWeight: 600 }}>Purchase Amount</span>
-                <span className="s-value" style={{ fontWeight: 600 }}>{purchaseAmount > 0 ? formatCurrency(purchaseAmount) : '—'}</span>
+                <span className="s-label">Payment Method</span>
+                <span className="s-value" style={{ fontSize: 13 }}>{form.payment_method}</span>
               </div>
               <div className="summary-grand-total">
                 <span className="gt-label">PAYABLE TO CUSTOMER</span>
-                <span className="gt-value">{purchaseAmount > 0 ? formatCurrency(purchaseAmount) : '—'}</span>
+                <span className="gt-value">{totalAmount > 0 ? formatCurrency(totalAmount) : '—'}</span>
               </div>
             </div>
             <div style={{ padding: '0 20px 20px' }}>
-              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 10 }}>
-                Payment: <strong>{form.payment_method}</strong>
-              </div>
               <button
                 className="btn btn-secondary"
                 style={{ width: '100%', justifyContent: 'center', padding: '12px' }}
@@ -732,7 +915,7 @@ function SilverPurchaseForm({ onBack, onSave, defaultRate }) {
       <div className="mobile-sticky-summary">
         <div>
           <div className="mss-label">Payable to Customer</div>
-          <div className="mss-value">{finalPayable > 0 ? formatCurrency(finalPayable) : '—'}</div>
+          <div className="mss-value">{totalAmount > 0 ? formatCurrency(totalAmount) : '—'}</div>
         </div>
         <button className="btn btn-secondary btn-sm" onClick={handleSave}>Save Receipt</button>
       </div>
@@ -791,8 +974,8 @@ function PurchaseHistory({ purchases, onViewReceipt }) {
               <th>Customer</th>
               <th>Type</th>
               <th>Metal</th>
-              <th>Net Weight</th>
-              <th>Rate</th>
+              <th>Items</th>
+              <th>Total Net Weight</th>
               <th>Purchase Amount</th>
               <th>Payment</th>
               <th>Actions</th>
@@ -807,6 +990,7 @@ function PurchaseHistory({ purchases, onViewReceipt }) {
               </tr>
             ) : filtered.map(p => {
               const isGold = p.transactionType === 'GOLD_PURCHASE';
+              const itemCount = Array.isArray(p.items) ? p.items.length : 1;
               return (
                 <tr key={p.id}>
                   <td><span className="td-primary">{p.purchase_number}</span></td>
@@ -834,8 +1018,20 @@ function PurchaseHistory({ purchases, onViewReceipt }) {
                   <td style={{ fontWeight: 600, color: isGold ? '#8B6914' : '#334155', fontSize: 13 }}>
                     {isGold ? '🪙 Gold' : '⬜ Silver'}
                   </td>
+                  <td style={{ textAlign: 'center', fontWeight: 600 }}>
+                    <span style={{
+                      display: 'inline-block',
+                      background: isGold ? 'rgba(201,168,76,0.12)' : 'rgba(148,163,184,0.12)',
+                      color: isGold ? '#8B6914' : '#334155',
+                      borderRadius: 10,
+                      padding: '2px 10px',
+                      fontSize: 12,
+                      fontWeight: 700,
+                    }}>
+                      {itemCount} {itemCount === 1 ? 'item' : 'items'}
+                    </span>
+                  </td>
                   <td style={{ fontWeight: 600 }}>{formatWeight(p.total_net_weight)}</td>
-                  <td style={{ fontSize: 13 }}>Rs. {p.purchase_rate}/g</td>
                   <td><strong>{formatCurrency(p.final_payable)}</strong></td>
                   <td style={{ fontSize: 13 }}>{p.payment_method}</td>
                   <td>
@@ -974,7 +1170,8 @@ export default function OldPurchase() {
               </div>
               <h3 style={{ fontSize: 22, fontWeight: 700, color: '#8B6914', marginBottom: 8 }}>GOLD PURCHASE</h3>
               <p style={{ fontSize: 13, color: '#7A6A4A', lineHeight: 1.6, marginBottom: 16 }}>
-                Buy old gold jewellery from a customer
+                Buy old gold jewellery from a customer.<br />
+                <span style={{ fontSize: 12, color: '#9A8050' }}>Supports multiple items per transaction.</span>
               </p>
               <div style={{ fontSize: 12, color: '#8B6914', background: 'rgba(201,168,76,0.1)', padding: '4px 10px', borderRadius: 8, marginBottom: 16, display: 'inline-block' }}>
                 Live Gold Rate: Rs. {goldRate}/g (22K)
@@ -1010,7 +1207,8 @@ export default function OldPurchase() {
               </div>
               <h3 style={{ fontSize: 22, fontWeight: 700, color: '#334155', marginBottom: 8 }}>SILVER PURCHASE</h3>
               <p style={{ fontSize: 13, color: '#64748B', lineHeight: 1.6, marginBottom: 16 }}>
-                Buy old silver jewellery from a customer
+                Buy old silver jewellery from a customer.<br />
+                <span style={{ fontSize: 12, color: '#7A8A9A' }}>Supports multiple items per transaction.</span>
               </p>
               <div style={{ fontSize: 12, color: '#334155', background: 'rgba(148,163,184,0.12)', padding: '4px 10px', borderRadius: 8, marginBottom: 16, display: 'inline-block' }}>
                 Live Silver Rate: Rs. {silverRate}/g (999)
@@ -1038,8 +1236,9 @@ export default function OldPurchase() {
     );
   }
 
-  // ── STEP B: Form + post-save ──
+  // ── STEP B: Post-save success screen ──
   if (savedReceipt) {
+    const itemCount = Array.isArray(savedReceipt.items) ? savedReceipt.items.length : 1;
     return (
       <div>
         <div className="page-header">
@@ -1057,8 +1256,11 @@ export default function OldPurchase() {
         <div style={{ maxWidth: 480, margin: '40px auto', textAlign: 'center' }}>
           <div style={{ fontSize: 48, marginBottom: 16 }}>✅</div>
           <h3 style={{ fontSize: 20, fontWeight: 700, marginBottom: 6 }}>Receipt Saved!</h3>
-          <p style={{ color: 'var(--text-muted)', marginBottom: 24 }}>
+          <p style={{ color: 'var(--text-muted)', marginBottom: 8 }}>
             {savedReceipt.purchase_number} — {savedReceipt.transaction_type_label}
+          </p>
+          <p style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 24 }}>
+            {itemCount} {itemCount === 1 ? 'item' : 'items'} &nbsp;·&nbsp; Total Net Weight: {formatWeight(savedReceipt.total_net_weight)} &nbsp;·&nbsp; {formatCurrency(savedReceipt.final_payable)}
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <button
@@ -1098,7 +1300,7 @@ export default function OldPurchase() {
     );
   }
 
-  // ── STEP B: Active form ──
+  // ── STEP C: Active form ──
   return (
     <>
       {purchaseType === 'GOLD_PURCHASE' ? (

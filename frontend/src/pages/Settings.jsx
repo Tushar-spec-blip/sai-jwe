@@ -219,37 +219,42 @@ export default function Settings() {
 
           {/* ── Printing ── */}
           {activeTab === 'Printing' && (
-            <div style={{ maxWidth: 400 }}>
+            <div style={{ maxWidth: 520 }}>
               <h3 style={{ marginBottom: 20, fontSize: 16 }}>Print Settings</h3>
               <div className="form-group">
                 <label className="form-label">Default Invoice Format</label>
-                <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
-                  {['A4', '80mm'].map(fmt => (
+                <div style={{ display: 'flex', gap: 12, marginTop: 8, flexWrap: 'wrap' }}>
+                  {[
+                    { key: 'A4',   icon: '📄', desc: 'Standard A4 Paper (210×297mm)' },
+                    { key: 'A5',   icon: '📋', desc: 'Compact A5 Paper (148×210mm)' },
+                    { key: '80mm', icon: '🧾', desc: 'Thermal Printer (80mm roll)' },
+                  ].map(({ key, icon, desc }) => (
                     <div
-                      key={fmt}
-                      onClick={() => set('default_invoice_format', fmt)}
+                      key={key}
+                      onClick={() => set('default_invoice_format', key)}
                       style={{
-                        padding: '16px 24px',
-                        border: `2px solid ${draft.default_invoice_format === fmt ? 'var(--gold)' : 'var(--border)'}`,
+                        padding: '16px 20px',
+                        border: `2px solid ${draft.default_invoice_format === key ? 'var(--gold)' : 'var(--border)'}`,
                         borderRadius: 'var(--radius-md)',
                         cursor: 'pointer',
-                        background: draft.default_invoice_format === fmt ? 'rgba(201,168,76,0.08)' : 'white',
+                        background: draft.default_invoice_format === key ? 'rgba(201,168,76,0.08)' : 'white',
                         textAlign: 'center',
                         transition: 'all 0.2s ease',
+                        minWidth: 120,
                       }}
                     >
-                      <div style={{ fontSize: 20, marginBottom: 4 }}>{fmt === 'A4' ? '📄' : '🧾'}</div>
-                      <div style={{ fontWeight: 600, color: draft.default_invoice_format === fmt ? 'var(--gold-dark)' : 'var(--text-dark)' }}>
-                        {fmt}
+                      <div style={{ fontSize: 20, marginBottom: 4 }}>{icon}</div>
+                      <div style={{ fontWeight: 600, color: draft.default_invoice_format === key ? 'var(--gold-dark)' : 'var(--text-dark)' }}>
+                        {key}
                       </div>
-                      <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                        {fmt === 'A4' ? 'Standard A4 Paper' : 'Thermal Printer'}
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
+                        {desc}
                       </div>
                     </div>
                   ))}
                 </div>
                 <span className="form-hint" style={{ marginTop: 10, display: 'block' }}>
-                  This sets the default print option shown when you print an invoice.
+                  This sets the default print option shown when you print an invoice or purchase receipt.
                 </span>
               </div>
             </div>
