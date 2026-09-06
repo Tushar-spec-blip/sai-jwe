@@ -25,9 +25,9 @@ export default function Thermal80PurchaseReceiptTemplate({ purchase, shopSetting
 
   const shop = {
     name: shopSettings.shop_name || 'SRI SAI JEWELS',
-    phone: shopSettings.shop_phone || '+91 98765 43210',
-    address: shopSettings.shop_address || '123, Temple Street, Chennai',
-    gstin: shopSettings.gstin || '33AABCS1234F1Z5',
+    phone: shopSettings.shop_phone || '7795030026 / 8970844634',
+    address: shopSettings.shop_address || "1-138(2), 'Rama Laxman Arcade', Near Old Bus Stand\nSyndicate Bank Road, Uppinangady - 574 241, D.K.",
+    gstin: shopSettings.gstin || '29EGCPK5465H1Z2',
   };
 
   const formattedDate = purchase_date

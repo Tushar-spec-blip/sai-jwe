@@ -18,9 +18,9 @@ export default function A4InvoiceTemplate({ invoice, shopSettings = {} }) {
 
   const shop = {
     name: shopSettings.shop_name || 'Sri Sai Jewels',
-    address: shopSettings.shop_address || '123, Temple Street, Chennai - 600001',
-    phone: shopSettings.shop_phone || '+91 98765 43210',
-    gstin: shopSettings.gstin || '33AABCS1234F1Z5',
+    address: shopSettings.shop_address || "1-138(2), 'Rama Laxman Arcade', Near Old Bus Stand\nSyndicate Bank Road, Uppinangady - 574 241, D.K.",
+    phone: shopSettings.shop_phone || '7795030026 / 8970844634',
+    gstin: shopSettings.gstin || '29EGCPK5465H1Z2',
   };
 
   const beforeTax = invoice.before_tax !== undefined ? invoice.before_tax : Math.max(0, (subtotal || 0) - (discount || 0));
@@ -209,6 +209,18 @@ export default function A4InvoiceTemplate({ invoice, shopSettings = {} }) {
           <strong>Notes: </strong>{notes}
         </div>
       )}
+
+      {/* Terms & Conditions — Sales invoices */}
+      <div style={{ marginTop: 16, padding: '10px 14px', background: '#FFFBF0', border: '1px solid #F0E4C4', borderRadius: 6 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: '#7A6A4A', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>
+          Terms &amp; Conditions :
+        </div>
+        <div style={{ fontSize: 12, color: '#444', lineHeight: 1.7 }}>
+          <div>1) Exchange with 3 days without damage.</div>
+          <div>2) Non-refundable.</div>
+          <div>3) Order item not exchangable &amp; Non-refundable.</div>
+        </div>
+      </div>
 
       {/* Signatures */}
       <div className="invoice-signatures">

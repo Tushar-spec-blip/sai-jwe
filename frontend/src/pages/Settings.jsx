@@ -106,12 +106,14 @@ export default function Settings() {
                   />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Phone Number</label>
+                  <label className="form-label">Phone / Mobile Number(s)</label>
                   <input
                     className="form-input"
                     value={draft.shop_phone}
                     onChange={e => set('shop_phone', e.target.value)}
+                    placeholder="e.g. 7795030026 / 8970844634"
                   />
+                  <span className="form-hint">Use ' / ' to separate multiple numbers</span>
                 </div>
                 <div className="form-group">
                   <label className="form-label">GSTIN</label>
@@ -226,7 +228,7 @@ export default function Settings() {
                 <div style={{ display: 'flex', gap: 12, marginTop: 8, flexWrap: 'wrap' }}>
                   {[
                     { key: 'A4',   icon: '📄', desc: 'Standard A4 Paper (210×297mm)' },
-                    { key: 'A5',   icon: '📋', desc: 'Compact A5 Paper (148×210mm)' },
+                    { key: 'A5',   icon: '📋', desc: 'Compact A5 Landscape (210×148mm)' },
                     { key: '80mm', icon: '🧾', desc: 'Thermal Printer (80mm roll)' },
                   ].map(({ key, icon, desc }) => (
                     <div

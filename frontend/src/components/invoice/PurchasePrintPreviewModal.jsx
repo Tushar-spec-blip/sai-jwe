@@ -29,9 +29,9 @@ export default function PurchasePrintPreviewModal({ purchase, isOpen, onClose, i
   const isGold = purchase.transactionType === 'GOLD_PURCHASE';
   const receiptHeading = isGold ? 'OLD GOLD PURCHASE RECEIPT' : 'OLD SILVER PURCHASE RECEIPT';
 
-  // ── A5 print CSS (injected into popup) ──
-  // @page margin: 6mm → printable area: 136mm × 198mm
-  // .a5-invoice padding:0 so the full 136mm width is available to the table.
+  // ── A5 Landscape print CSS (injected into popup) ──
+  // @page size: A5 landscape = 210mm × 148mm, margin 6mm → printable area ≈ 198mm × 136mm
+  // .a5-invoice padding:0 so full printable width is available to the table.
   const A5_PRINT_CSS = `
     * { box-sizing: border-box; }
     .a5-invoice {
@@ -76,7 +76,7 @@ export default function PurchasePrintPreviewModal({ purchase, isOpen, onClose, i
     const isA5 = format === 'A5';
     const is80mm = format === '80mm';
 
-    const pageSize = is80mm ? '80mm auto' : isA5 ? 'A5 portrait' : 'A4';
+    const pageSize = is80mm ? '80mm auto' : isA5 ? 'A5 landscape' : 'A4';
     const pageMargin = is80mm ? '4mm' : isA5 ? '6mm' : '0';
     const fontFamily = is80mm ? "'Courier New', monospace" : "'Inter', sans-serif";
 
@@ -167,8 +167,8 @@ export default function PurchasePrintPreviewModal({ purchase, isOpen, onClose, i
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // Preview container width per format
-  const previewMinWidth = format === 'A4' ? 700 : format === 'A5' ? 520 : 300;
+  // Preview container width per format — A5 landscape is wider than portrait
+  const previewMinWidth = format === 'A4' ? 700 : format === 'A5' ? 620 : 300;
 
   return (
     <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>

@@ -91,17 +91,18 @@ export const mockDashboardStats = {
 
 export const mockSettings = {
   shop_name: 'Sri Sai Jewels',
-  shop_address: '123, Temple Street, Chennai - 600001',
-  shop_phone: '+91 98765 00000',
-  gstin: '33DEMOS1234F1Z5',
+  shop_address: "1-138(2), 'Rama Laxman Arcade', Near Old Bus Stand\nSyndicate Bank Road, Uppinangady - 574 241, D.K.",
+  shop_phone: '7795030026 / 8970844634',
+  gstin: '29EGCPK5465H1Z2',
   gst_rate: '3.0',
-  invoice_prefix: 'DEMO-',
+  invoice_prefix: 'SSJ-',
   currency: 'INR',
   rounding_method: 'nearest',
   making_charge_method: 'fixed',
   wastage_method: 'percentage',
   default_invoice_format: 'A4',
 };
+
 
 export const mockPendingPayments = [
   { customer: 'Priya Sharma', invoice: 'DEMO-1023', total: 31724, paid: 20000, balance: 11724, status: 'PARTIAL' },

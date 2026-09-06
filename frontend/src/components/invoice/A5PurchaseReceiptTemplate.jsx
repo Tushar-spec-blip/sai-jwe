@@ -2,14 +2,15 @@ import logo from '../../assets/logo.png';
 import { formatCurrency, formatWeight, numberToWords } from '../../utils/billingCalculator';
 
 /**
- * A5 Old Purchase Receipt Template — 148mm × 210mm portrait
+ * A5 Old Purchase Receipt Template — 210mm × 148mm LANDSCAPE
  * Used when Sri Sai Jewels BUYS old jewellery FROM a customer.
  *
  * transactionType: 'GOLD_PURCHASE' | 'SILVER_PURCHASE'
  *
- * Multi-item: rows use breakInside:avoid; content flows onto additional A5 pages.
- * Table: width:100%, table-layout:fixed, NO minWidth. All 8 columns fit inside A5.
+ * Multi-item: rows use breakInside:avoid; content flows onto additional A5 landscape pages.
+ * Table: width:100%, table-layout:fixed, NO minWidth. All 8 columns fit inside A5 landscape.
  * Column widths sum to exactly 100%.
+ * NOTE: No sales Terms & Conditions — this is a purchase receipt, not a sales invoice.
  */
 export default function A5PurchaseReceiptTemplate({ purchase, shopSettings = {} }) {
   if (!purchase) return null;
@@ -29,9 +30,9 @@ export default function A5PurchaseReceiptTemplate({ purchase, shopSettings = {} 
 
   const shop = {
     name:    shopSettings.shop_name    || 'Sri Sai Jewels',
-    address: shopSettings.shop_address || '123, Temple Street, Chennai - 600001',
-    phone:   shopSettings.shop_phone   || '+91 98765 43210',
-    gstin:   shopSettings.gstin        || '33AABCS1234F1Z5',
+    address: shopSettings.shop_address || "1-138(2), 'Rama Laxman Arcade', Near Old Bus Stand\nSyndicate Bank Road, Uppinangady - 574 241, D.K.",
+    phone:   shopSettings.shop_phone   || '7795030026 / 8970844634',
+    gstin:   shopSettings.gstin        || '29EGCPK5465H1Z2',
   };
 
   const formattedDate = purchase_date
@@ -139,20 +140,20 @@ export default function A5PurchaseReceiptTemplate({ purchase, shopSettings = {} 
       </div>
 
       {/* ── Items Table ══
-          8 columns:
-          #(3%)  Desc(24%)  Purity(7%)  Gr.Wt(11%)  St.Wt(10%)  Net Wt(10%)  Rate(14%)  Amount(21%)  = 100%
+          8 columns (A5 landscape widths):
+          #(3%)  Desc(27%)  Purity(7%)  Gr.Wt(10%)  St.Wt(9%)  Net Wt(9%)  Rate(13%)  Amount(22%)  = 100%
       ── */}
       <div style={{ marginBottom: 9, width: '100%', boxSizing: 'border-box' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed', boxSizing: 'border-box' }}>
           <colgroup>
             <col style={{ width: '3%'  }} />
-            <col style={{ width: '24%' }} />
+            <col style={{ width: '27%' }} />
             <col style={{ width: '7%'  }} />
-            <col style={{ width: '11%' }} />
             <col style={{ width: '10%' }} />
-            <col style={{ width: '10%' }} />
-            <col style={{ width: '14%' }} />
-            <col style={{ width: '21%' }} />
+            <col style={{ width: '9%'  }} />
+            <col style={{ width: '9%'  }} />
+            <col style={{ width: '13%' }} />
+            <col style={{ width: '22%' }} />
           </colgroup>
           <thead>
             <tr>

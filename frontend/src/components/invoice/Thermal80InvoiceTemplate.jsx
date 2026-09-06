@@ -19,9 +19,9 @@ export default function Thermal80InvoiceTemplate({ invoice, shopSettings = {} })
 
   const shop = {
     name: shopSettings.shop_name || 'SRI SAI JEWELS',
-    phone: shopSettings.shop_phone || '+91 98765 43210',
-    address: shopSettings.shop_address || '123, Temple Street, Chennai',
-    gstin: shopSettings.gstin || '33AABCS1234F1Z5',
+    phone: shopSettings.shop_phone || '7795030026 / 8970844634',
+    address: shopSettings.shop_address || "1-138(2), 'Rama Laxman Arcade', Near Old Bus Stand\nSyndicate Bank Road, Uppinangady - 574 241, D.K.",
+    gstin: shopSettings.gstin || '29EGCPK5465H1Z2',
   };
 
   const beforeTax = invoice.before_tax !== undefined ? invoice.before_tax : Math.max(0, (subtotal || 0) - (discount || 0));
@@ -115,6 +115,15 @@ export default function Thermal80InvoiceTemplate({ invoice, shopSettings = {} })
       <div className="thermal-row"><span>Paid:</span><span>{formatCurrency(paid_amount)}</span></div>
       {balance_amount > 0 && <div className="thermal-row"><span>Balance:</span><span><strong>{formatCurrency(balance_amount)}</strong></span></div>}
       <div className="thermal-row"><span>Status:</span><span><strong>{payment_status}</strong></span></div>
+
+      {/* Terms & Conditions — Sales receipts */}
+      <hr className="thermal-divider" />
+      <div style={{ fontSize: 9.5, lineHeight: 1.6 }}>
+        <div style={{ fontWeight: 'bold', marginBottom: 2 }}>Terms &amp; Conditions:</div>
+        <div>1) Exchange with 3 days without damage.</div>
+        <div>2) Non-refundable.</div>
+        <div>3) Order item not exchangable &amp; Non-refundable.</div>
+      </div>
 
       <hr className="thermal-divider" />
 
