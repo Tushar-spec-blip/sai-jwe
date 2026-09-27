@@ -8,6 +8,8 @@ import Inventory from './pages/Inventory';
 import NewBill from './pages/NewBill';
 import Bills from './pages/Bills';
 import OldPurchase from './pages/OldPurchase';
+import Service from './pages/Service';
+import TestingReports from './pages/TestingReports';
 import Payments from './pages/Payments';
 import Reports from './pages/Reports';
 import MetalRates from './pages/MetalRates';
@@ -21,6 +23,8 @@ const ROUTES = {
   '/new-bill': NewBill,
   '/bills': Bills,
   '/old-purchase': OldPurchase,
+  '/service': Service,
+  '/testing-reports': TestingReports,
   '/payments': Payments,
   '/reports': Reports,
   '/metal-rates': MetalRates,

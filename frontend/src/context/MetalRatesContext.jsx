@@ -19,11 +19,19 @@ export function MetalRatesProvider({ children }) {
   };
 
   const getRateFor = (metal, purity) => {
-    const found = rates.find(r => r.metal.toLowerCase() === (metal || '').toLowerCase() && r.purity === purity);
+    // Exact match on metal + purity label (e.g. metal='Silver', purity='92.5')
+    const found = rates.find(r =>
+      r.metal.toLowerCase() === (metal || '').toLowerCase() &&
+      r.purity === purity
+    );
     if (found) return found.rate_per_gram;
+    // For Silver, return 0 (no fallback) so billing never silently uses wrong rate.
+    // For Gold, fall back to first Gold rate as before.
+    if ((metal || '').toLowerCase() === 'silver') return 0;
     const fallback = rates.find(r => r.metal.toLowerCase() === (metal || '').toLowerCase());
-    return fallback ? fallback.rate_per_gram : (metal?.toLowerCase() === 'silver' ? 85 : 6500);
+    return fallback ? fallback.rate_per_gram : 6500;
   };
+
 
   return (
     <MetalRatesContext.Provider value={{ rates, updateRate, getRateFor }}>

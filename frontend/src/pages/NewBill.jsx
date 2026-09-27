@@ -16,6 +16,7 @@ export default function NewBill({ onNavigate, initialSaleType }) {
 
   const createNewItem = (metal = 'Gold') => {
     const isSilver = metal === 'Silver';
+    // Silver default purity: '999' (must match Metal Rates purity keys exactly)
     const defaultPurity = isSilver ? '999' : '22K';
     const liveRate = getRateFor(isSilver ? 'Silver' : 'Gold', defaultPurity);
     return {
@@ -27,7 +28,8 @@ export default function NewBill({ onNavigate, initialSaleType }) {
       purity: defaultPurity,
       gross_weight: '',
       stone_weight: 0,
-      gold_rate: liveRate || (isSilver ? 85 : 6500),
+      // Silver rate always comes from Metal Rates (no hardcoded fallback)
+      gold_rate: liveRate || (isSilver ? 0 : 6500),
       wastage_mode: 'percentage',
       wastage_percent: isSilver ? 1 : 2,
       wastage_weight: '',
@@ -118,8 +120,17 @@ export default function NewBill({ onNavigate, initialSaleType }) {
       if (it._id !== id) return it;
       const updated = { ...it, [field]: value };
       if (field === 'purity') {
-        const liveRate = getRateFor(it.metal, value);
-        if (liveRate) updated.gold_rate = liveRate;
+        if (it.metal === 'Silver') {
+          // Always fetch from Metal Rates for all Silver purities (including 'Other').
+          // This ensures the rate field always reflects the configured rate,
+          // even when the rate is 0 (not yet configured).
+          const liveRate = getRateFor('Silver', value);
+          updated.gold_rate = liveRate;
+        } else {
+          // Gold: only update rate if a non-zero rate is found
+          const liveRate = getRateFor(it.metal, value);
+          if (liveRate) updated.gold_rate = liveRate;
+        }
       }
       return updated;
     }));
@@ -153,7 +164,7 @@ export default function NewBill({ onNavigate, initialSaleType }) {
       purity: product.purity,
       gross_weight: product.gross_weight,
       stone_weight: product.stone_weight,
-      gold_rate: liveRate || (product.metal.toLowerCase() === 'silver' ? 85 : 6500),
+      gold_rate: liveRate || (product.metal.toLowerCase() === 'silver' ? 0 : 6500),
       wastage_mode: 'percentage',
       wastage_percent: wasPct,
       wastage_weight: wasWt,
@@ -585,7 +596,10 @@ export default function NewBill({ onNavigate, initialSaleType }) {
                       <div className="form-group">
                         <label className="form-label">Purity</label>
                         <select className="form-select" value={item.purity} onChange={e => setItem(item._id, 'purity', e.target.value)}>
-                          {(saleType === 'SILVER' ? ['999', 'Other'] : ['24K', '22K', '18K', '14K', 'Other']).map(p => (
+                          {(isSilverSale
+                            ? ['999', '92.5', '80', '70', '60', 'Other']
+                            : ['24K', '22K', '18K', '14K', 'Other']
+                          ).map(p => (
                             <option key={p} value={p}>{p}</option>
                           ))}
                         </select>
@@ -603,8 +617,30 @@ export default function NewBill({ onNavigate, initialSaleType }) {
                         <input className="form-input" value={calcItem.net_weight.toFixed(3)} disabled style={{ color: isSilverSale ? '#334155' : 'var(--gold-dark)', fontWeight: 700 }} />
                       </div>
                       <div className="form-group">
-                        <label className="form-label">{isSilverSale ? 'Silver Rate (Rs./g)' : 'Gold Rate (Rs./g)'}</label>
-                        <input className="form-input" type="number" inputMode="numeric" step="1" value={item.gold_rate} onChange={e => setItem(item._id, 'gold_rate', e.target.value)} />
+                        {/* Silver Rate: auto-populated from Metal Rates for standard purities;
+                            editable for 'Other'. Gold Rate: always editable. */}
+                        <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          {isSilverSale ? 'Silver Rate (Rs./g)' : 'Gold Rate (Rs./g)'}
+                          {isSilverSale && item.purity !== 'Other' && (
+                            <span style={{ fontSize: 10, fontWeight: 600, color: '#334155', background: 'rgba(148,163,184,0.18)', border: '1px solid rgba(148,163,184,0.4)', borderRadius: 4, padding: '1px 6px', letterSpacing: '0.02em' }}>
+                              From Metal Rates
+                            </span>
+                          )}
+                        </label>
+                        <input
+                          className="form-input"
+                          type="number"
+                          inputMode="numeric"
+                          step="1"
+                          value={item.gold_rate}
+                          onChange={e => setItem(item._id, 'gold_rate', e.target.value)}
+                          readOnly={isSilverSale && item.purity !== 'Other'}
+                          style={isSilverSale && item.purity !== 'Other' ? { background: '#f1f5f9', color: '#334155', fontWeight: 700, cursor: 'not-allowed' } : {}}
+                          title={isSilverSale && item.purity !== 'Other' ? 'Rate is automatically set from Metal Rates. Edit in Metal Rates page.' : undefined}
+                        />
+                        {isSilverSale && item.purity !== 'Other' && item.gold_rate === 0 && (
+                          <span className="form-hint" style={{ color: '#dc2626' }}>Rate not set — please update in Metal Rates page.</span>
+                        )}
                       </div>
 
                       {/* Wastage Type — Gold Sale only */}

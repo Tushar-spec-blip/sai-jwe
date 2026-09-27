@@ -32,11 +32,17 @@ export const mockProducts = [
 ];
 
 export const mockMetalRates = [
-  { id: 1, metal: 'Gold', purity: '24K', rate_per_gram: 7100, updated_at: '2026-08-22' },
-  { id: 2, metal: 'Gold', purity: '22K', rate_per_gram: 6500, updated_at: '2026-08-22' },
-  { id: 3, metal: 'Gold', purity: '18K', rate_per_gram: 5300, updated_at: '2026-08-22' },
-  { id: 4, metal: 'Silver', purity: '999', rate_per_gram: 85, updated_at: '2026-08-22' },
+  { id: 1, metal: 'Gold',   purity: '24K',   rate_per_gram: 7100, updated_at: '2026-08-22' },
+  { id: 2, metal: 'Gold',   purity: '22K',   rate_per_gram: 6500, updated_at: '2026-08-22' },
+  { id: 3, metal: 'Gold',   purity: '18K',   rate_per_gram: 5300, updated_at: '2026-08-22' },
+  { id: 4, metal: 'Silver', purity: '999',   rate_per_gram: 85,   updated_at: '2026-08-22' },
+  { id: 5, metal: 'Silver', purity: '92.5',  rate_per_gram: 0,    updated_at: '2026-08-22' },
+  { id: 6, metal: 'Silver', purity: '80',    rate_per_gram: 0,    updated_at: '2026-08-22' },
+  { id: 7, metal: 'Silver', purity: '70',    rate_per_gram: 0,    updated_at: '2026-08-22' },
+  { id: 8, metal: 'Silver', purity: '60',    rate_per_gram: 0,    updated_at: '2026-08-22' },
+  { id: 9, metal: 'Silver', purity: 'Other', rate_per_gram: 0,    updated_at: '2026-08-22' },
 ];
+
 
 export const mockInvoices = [
   {
@@ -286,4 +292,10 @@ export const mockPurchases = [
     created_at: '2026-08-23',
   },
 ];
+
+// Service records — starts empty; populated as services are created
+export const mockServices = [];
+
+// Testing Report records — starts empty; populated as reports are created
+export const mockTestingReports = [];
 

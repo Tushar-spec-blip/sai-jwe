@@ -3,7 +3,7 @@ import logo from '../../assets/logo.png';
 import {
   LayoutDashboard, Users, FileText, CreditCard,
   BarChart3, Coins, Settings, HardDrive, ChevronDown,
-  ShoppingBag, ShoppingCart, Receipt, Archive, X
+  ShoppingBag, ShoppingCart, Receipt, Archive, X, Wrench, ClipboardList
 } from 'lucide-react';
 
 const navItems = [
@@ -22,8 +22,10 @@ const navItems = [
       { key: 'silver-sale', label: 'Silver Sale', path: '/silver-sale', icon: ShoppingBag },
     ]
   },
-  { key: 'old-purchase', label: 'Old Purchase',    icon: Archive,         path: '/old-purchase' },
-  { key: 'bills',        label: 'Bills / Invoices', icon: Receipt,         path: '/bills' },
+  { key: 'old-purchase',     label: 'Old Purchase',       icon: Archive,        path: '/old-purchase' },
+  { key: 'service',          label: 'Service',             icon: Wrench,         path: '/service' },
+  { key: 'testing-reports',  label: 'Testing Reports',     icon: ClipboardList,  path: '/testing-reports' },
+  { key: 'bills',            label: 'Bills / Invoices',    icon: Receipt,        path: '/bills' },
   { key: 'payments',    label: 'Payments',          icon: CreditCard,      path: '/payments' },
   { key: 'reports',     label: 'Reports',           icon: BarChart3,       path: '/reports' },
   { key: 'metal-rates', label: 'Metal Rates',       icon: Coins,           path: '/metal-rates' },
